@@ -64,6 +64,26 @@ mySoundPlayer = "ffplay -nodisp -autoexit "
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
 
+-- isZen :: X Bool
+-- isZen = withWindowSet $ \ws ->
+--   case W.peek ws of
+--     Nothing -> pure False
+--     Just w -> do
+--       cls <- runQuery className w
+--       pure (cls == "zen")
+--
+-- nextZenTab :: X ()
+-- nextZenTab = do
+--   zen <- isZen
+--   when zen $
+--     spawn "notify-send 'ALT J' && xdotool key Control_L+Tab"
+--
+-- prevZenTab :: X ()
+-- prevZenTab = do
+--   zen <- isZen
+--   when zen $
+--     spawn "notify-send 'ALT K' && xdotool key Control_L+Shift_L+Tab"
+
 myScratchPads :: [NamedScratchpad]
 myScratchPads =
   [ NS "terminal" spawnTerm findTerm manageTerm,
@@ -311,6 +331,8 @@ myKeys c =
             ("M-k", addName "Focus up" $ sendMessage $ Go U),
             ("M-l", addName "Focus right" $ sendMessage $ Go R),
             ("M-r", addName "Rotate BSP" $ sendMessage Rotate),
+            -- ("M1-j", addName "Next Zen Tab" nextZenTab),
+            -- ("M1-k", addName "Previous Zen Tab" prevZenTab),
             ("M-S-h", addName "Swap left" $ sendMessage $ XMonad.Layout.WindowNavigation.Swap L),
             ("M-S-j", addName "Swap down" $ sendMessage $ XMonad.Layout.WindowNavigation.Swap D),
             ("M-S-k", addName "Swap up" $ sendMessage $ XMonad.Layout.WindowNavigation.Swap U),
@@ -348,8 +370,6 @@ myKeys c =
         ^++^ subKeys
           "Favorite programs"
           [ ("M1-C-l", addName "Launch terminal" $ spawn (myTerminal)),
-            ("M1-C-k", addName "Launch web browser" $ spawn (myBrowser)),
-            ("M1-C-j", addName "Launch doublecmd" $ spawn (myFileManager)),
             ("M-[", addName "Launch btop - term" $ spawn (myTerminal ++ " -e btop")),
             ("M-S-[", addName "Launch htop - term" $ spawn (myTerminal ++ " -e htop")),
             ("M-]", addName "Launch nvtop - term" $ spawn (myTerminal ++ " -e nvtop")),

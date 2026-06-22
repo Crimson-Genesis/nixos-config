@@ -8,7 +8,7 @@
     ./hardware-configuration.nix
     ./keyd.nix
     ./nvidia.nix
-    ./sddm.nix
+    # ./sddm.nix
   ];
 
   boot = {
@@ -93,10 +93,19 @@
     };
 
     displayManager = {
-      sddm = {
-        enable = true;
-        package = pkgs.kdePackages.sddm;
-        theme = "sddm-astronaut-theme";
+      # sddm = {
+      #   enable = true;
+      #   package = pkgs.kdePackages.sddm;
+      #   theme = "sddm-astronaut-theme";
+      # };
+      ly = {
+          enable = true;
+	  settings = {
+	  animate = true;
+	  animation = "matrix";
+	  clock = "%c";
+	  hide_borders = true;
+	  };
       };
     };
 
@@ -169,8 +178,8 @@
     binutils
     mpvpaper
     hsetroot
-    kdePackages.sddm
-    sddm-astronaut
+    # kdePackages.sddm
+    # sddm-astronaut
     kdePackages.qtmultimedia
 
     net-tools
