@@ -1,0 +1,186 @@
+* {
+    font: "JetBrainsMono Nerd Font Mono 10";
+
+    bg0     : #000000;
+    bg1     : #000000;
+    bg2     : #000000;
+    bg3     : #202020;
+
+    fg0     : #c9c9c9;
+    fg1     : #afafaf;
+    fg2     : #727272;
+
+    red     : #49010e;
+    green   : #9ece6a;
+    yellow  : #e0af68;
+    blue    : #7aa2f7;
+    magenta : #9a7ecc;
+    cyan    : #4abaaf;
+
+    accent  : @red;
+    urgent  : @yellow;
+
+    background-color : transparent;
+    text-color       : @fg0;
+
+    margin  : 0;
+    padding : 0;
+    spacing : 0;
+}
+
+window {
+    location : northeast;
+    anchor   : northeast;
+
+    width    : 100%;
+    x-offset : 0px;
+    y-offset : 0px;
+
+    background-color : @bg1;
+
+    border        : 0px;
+    border-radius : 0px;
+}
+
+mainbox {
+    background-color : transparent;
+}
+
+inputbar {
+    children : [ entry ];
+
+    padding : 6px 10px;
+
+    background-color : @bg0;
+}
+
+entry {
+    placeholder : "";
+    placeholder-color : @fg2;
+
+    vertical-align : 0.5;
+}
+
+listview {
+    padding : 2px;
+
+    lines   : 15;
+    columns : 6;
+
+    dynamic      : true;
+    fixed-height : false;
+
+    cycle        : false;
+    scrollbar    : false;
+}
+
+element {
+    padding : 4px 6px;
+    spacing : 2px;
+
+    background-color : transparent;
+}
+
+element normal normal {
+    background-color : transparent;
+    text-color       : @fg0;
+}
+
+element selected normal {
+    background-color : @accent;
+    text-color       : #ffffff;
+}
+
+element normal active {
+    text-color : @bg0;
+    background-color : @green;
+}
+
+element alternate active {
+    text-color : @bg0;
+    background-color : @green;
+}
+
+element selected active {
+    text-color : @bg0;
+    background-color: @magenta;
+}
+
+element normal urgent {
+    text-color : @bg0;
+    background-color : @urgent;
+}
+
+element alternate urgent {
+    text-color : @bg0;
+    background-color : @urgent;
+}
+
+element selected urgent {
+    text-color : @bg0;
+    background-color: @magenta;
+}
+
+element-text {
+    text-color : inherit;
+}
+
+element-icon {
+    size : 0.9em;
+}
+
+scrollbar {
+    enabled : false;
+}
+
+textbox {
+    padding : 4px 8px;
+}
+
+configuration {
+    show: "drun";
+    modi: "combi,drun,run,window,calc,ssh,nerdy,man:rofi-man";
+
+    combi-modi: "drun,run,window,nerdy,man";
+
+    terminal: "alacritty";
+
+    matching: "fuzzy";
+    auto-select: false;
+    sort: true;
+    sorting-method: "fzf";
+
+    cycle: false;
+
+    show-icons: false;
+
+    kb-element-next: "";
+    kb-element-next: "Alt+j";
+    kb-element-prev: "";
+    kb-element-prev: "Alt+k";
+
+    kb-move-char-back: "";
+    kb-move-char-back: "Alt+h";
+    kb-move-char-forward: "";
+    kb-move-char-forward: "Alt+l";
+
+    kb-remove-word-forward: "";
+    kb-remove-word-back: "Alt+BackSpace";
+    kb-row-select: "";
+    kb-row-select: "Tab";
+
+    kb-secondary-copy: "";
+
+    kb-accept-alt: "";
+    kb-accept-alt: "Alt+Return";
+
+    kb-cancel: "";
+    kb-cancel: "Alt+space";
+}
+
+calc {
+    no-bold: true;
+    terse: false;
+    no-history: true;
+    no-persist-history: true;
+}

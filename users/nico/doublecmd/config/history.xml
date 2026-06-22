@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doublecmd>
+  <History>
+    <Navigation>
+      <Item>/etc/nixos/users/nico/</Item>
+      <Item>/etc/nixos/users/</Item>
+      <Item>/home/nico/.config/</Item>
+      <Item>/mnt/data/projects/</Item>
+      <Item>/etc/nixos/</Item>
+      <Item>/mnt/data/movies/to_watch/</Item>
+      <Item>/home/nico/</Item>
+      <Item>/mnt/data/</Item>
+      <Item>/nix/store/</Item>
+      <Item>/mnt/data/movies/</Item>
+      <Item>/mnt/data/movies/to_watch/Rick.and.Morty.S05.1080p.BluRay.DDP.5.1.x265-edge2020/</Item>
+      <Item>/etc/</Item>
+      <Item>/home/</Item>
+      <Item>/</Item>
+      <Item>/mnt/</Item>
+      <Item>/mnt/data/game/installed_games/</Item>
+      <Item>/nix/</Item>
+      <Item>/mnt/data/wallpaper_1/</Item>
+      <Item>/nix/store/1gc8jwhxdg7qiy217306qjc9pna7jyc3-doublecmd-1.2.4/lib/doublecmd/doc/</Item>
+      <Item>/nix/store/1gc8jwhxdg7qiy217306qjc9pna7jyc3-doublecmd-1.2.4/lib/doublecmd/</Item>
+    </Navigation>
+    <CommandLine/>
+    <FileMask/>
+    <VolumeSize/>
+    <CreateDirectories>
+      <Item Tag="0">doublecmd</Item>
+      <Item Tag="0"/>
+    </CreateDirectories>
+    <SearchText/>
+    <SearchTextPath/>
+    <ReplaceText/>
+    <ReplaceTextPath/>
+    <RenameNameMask/>
+    <RenameExtMask/>
+    <SearchDirectories/>
+    <SearchExcludeFiles/>
+    <SearchExcludeDirectories/>
+  </History>
+</doublecmd>

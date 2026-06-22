@@ -1,0 +1,216 @@
+# vim:fileencoding=utf-8:foldmethod=marker
+
+# ------------------------------------------------------------------------------
+
+# Manager
+
+# ------------------------------------------------------------------------------
+
+[mgr]
+cwd = { fg = "#d0d0d0" }
+
+find_keyword  = { fg = "#ffffff", bold = true, italic = true, underline = true }
+find_position = { fg = "#b0b0b0", bg = "reset", bold = true }
+
+marker_copied   = { fg = "#808080", bg = "#808080" }
+marker_cut      = { fg = "#606060", bg = "#606060" }
+marker_marked   = { fg = "#b0b0b0", bg = "#b0b0b0" }
+marker_selected = { fg = "#ffffff", bg = "#ffffff" }
+
+count_copied   = { fg = "#000000", bg = "#808080" }
+count_cut      = { fg = "#000000", bg = "#606060" }
+count_selected = { fg = "#000000", bg = "#ffffff" }
+
+border_symbol = "│"
+border_style  = { fg = "#202020" }
+
+# ------------------------------------------------------------------------------
+
+# Tabs
+
+# ------------------------------------------------------------------------------
+
+[tabs]
+active   = { fg = "#000000", bg = "#ffffff", bold = true }
+inactive = { fg = "#808080", bg = "#101010" }
+
+# ------------------------------------------------------------------------------
+
+# Mode
+
+# ------------------------------------------------------------------------------
+
+[mode]
+
+normal_main = { fg = "#000000", bg = "#ffffff", bold = true }
+normal_alt  = { fg = "#d0d0d0", bg = "#101010" }
+
+select_main = { fg = "#000000", bg = "#ffffff", bold = true }
+select_alt  = { fg = "#d0d0d0", bg = "#101010" }
+
+unset_main = { fg = "#000000", bg = "#b0b0b0", bold = true }
+unset_alt  = { fg = "#d0d0d0", bg = "#101010" }
+
+# ------------------------------------------------------------------------------
+
+# Status
+
+# ------------------------------------------------------------------------------
+
+[status]
+
+overall = { fg = "#d0d0d0" }
+
+sep_left  = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+
+progress_label  = { fg = "#000000", bold = true }
+progress_normal = { fg = "#d0d0d0", bg = "#101010" }
+progress_error  = { fg = "#ffffff", bg = "#101010" }
+
+perm_sep   = { fg = "#808080" }
+perm_type  = { fg = "#ffffff" }
+perm_read  = { fg = "#d0d0d0" }
+perm_write = { fg = "#b0b0b0" }
+perm_exec  = { fg = "#808080" }
+
+# ------------------------------------------------------------------------------
+
+# Pick
+
+# ------------------------------------------------------------------------------
+
+[pick]
+border   = { fg = "#d0d0d0" }
+active   = { fg = "#ffffff", bold = true }
+inactive = {}
+
+# ------------------------------------------------------------------------------
+
+# Input
+
+# ------------------------------------------------------------------------------
+
+[input]
+border   = { fg = "#d0d0d0" }
+title    = {}
+value    = {}
+selected = { reversed = true }
+
+# ------------------------------------------------------------------------------
+
+# Completion
+
+# ------------------------------------------------------------------------------
+
+[cmp]
+border = { fg = "#d0d0d0" }
+
+# ------------------------------------------------------------------------------
+
+# Tasks
+
+# ------------------------------------------------------------------------------
+
+[tasks]
+border  = { fg = "#d0d0d0" }
+title   = {}
+hovered = { fg = "#ffffff", underline = true }
+
+# ------------------------------------------------------------------------------
+
+# Which
+
+# ------------------------------------------------------------------------------
+
+[which]
+mask            = { bg = "#202020" }
+cand            = { fg = "#ffffff" }
+rest            = { fg = "#b0b0b0" }
+desc            = { fg = "#808080" }
+separator       = "  "
+separator_style = { fg = "#404040" }
+
+# ------------------------------------------------------------------------------
+
+# Help
+
+# ------------------------------------------------------------------------------
+
+[help]
+on      = { fg = "#ffffff" }
+run     = { fg = "#d0d0d0" }
+hovered = { reversed = true, bold = true }
+footer  = { fg = "#000000", bg = "#d0d0d0" }
+
+# ------------------------------------------------------------------------------
+
+# Spot
+
+# ------------------------------------------------------------------------------
+
+[spot]
+border   = { fg = "#d0d0d0" }
+title    = { fg = "#ffffff" }
+tbl_col  = { fg = "#d0d0d0" }
+tbl_cell = { fg = "#b0b0b0", bg = "#101010" }
+
+# ------------------------------------------------------------------------------
+
+# Notify
+
+# ------------------------------------------------------------------------------
+
+[notify]
+title_info  = { fg = "#d0d0d0" }
+title_warn  = { fg = "#ffffff" }
+title_error = { fg = "#808080" }
+
+# ------------------------------------------------------------------------------
+
+# Filetype
+
+# ------------------------------------------------------------------------------
+
+[filetype]
+
+rules = [
+# Images
+{ mime = "image/*", fg = "#ffffff" },
+
+# Video
+{ mime = "video/*", fg = "#d0d0d0" },
+
+# Audio
+{ mime = "audio/*", fg = "#b0b0b0" },
+
+# Archives
+{ mime = "application/zip",             fg = "#808080" },
+{ mime = "application/x-tar",           fg = "#808080" },
+{ mime = "application/x-bzip*",         fg = "#808080" },
+{ mime = "application/x-bzip2",         fg = "#808080" },
+{ mime = "application/x-7z-compressed", fg = "#808080" },
+{ mime = "application/x-rar",           fg = "#808080" },
+{ mime = "application/x-xz",            fg = "#808080" },
+
+# Documents
+{ mime = "application/doc",      fg = "#d0d0d0" },
+{ mime = "application/epub+zip", fg = "#d0d0d0" },
+{ mime = "application/pdf",      fg = "#d0d0d0" },
+{ mime = "application/rtf",      fg = "#d0d0d0" },
+{ mime = "application/vnd.*",    fg = "#d0d0d0" },
+
+# Executables
+{ mime = "application/*exec*", fg = "#ffffff" },
+
+# Broken symlinks
+{ mime = "*", is = "orphan", fg = "#ffffff", bg = "#202020" },
+
+# Regular files
+{ url = "*", fg = "#d0d0d0" },
+
+# Directories
+{ url = "*/", fg = "#ffffff" },
+
+]
+
