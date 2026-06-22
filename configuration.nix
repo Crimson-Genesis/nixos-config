@@ -127,7 +127,7 @@
       windowManager.xmonad = {
         enable = true;
         enableContribAndExtras = true;
-        extraPackages = hPkgs: [hPkgs.xmobar hPkgs.xmonad hPkgs.xmonad-contrib];
+        extraPackages = hPkgs: [hPkgs.xmonad hPkgs.xmonad-contrib];
       };
       xkb = {
         layout = "us";
@@ -193,7 +193,6 @@
     nvtopPackages.nvidia
     neovim
     yad
-    xmobar
 
     lua-language-server
     clang-tools

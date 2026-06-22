@@ -12,7 +12,6 @@ import XMonad.Actions.MouseResize
 import XMonad.Actions.RotSlaves (rotAllDown, rotSlavesDown)
 import XMonad.Actions.WindowGo (runOrRaise)
 import XMonad.Actions.WithAll (killAll)
-import XMonad.Hooks.DynamicLog (PP (..), dynamicLogWithPP, shorten, wrap, xmobarColor, xmobarPP)
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.InsertPosition
 import XMonad.Hooks.ManageDocks
@@ -31,7 +30,7 @@ import XMonad.Layout.WindowArranger (WindowArrangerMsg (..), windowArrange)
 import XMonad.Layout.WindowNavigation
 import qualified XMonad.StackSet as W
 import XMonad.Util.EZConfig (mkNamedKeymap)
-import XMonad.Util.Hacks (trayerPaddingXmobarEventHook, windowedFullscreenFixEventHook)
+import XMonad.Util.Hacks (windowedFullscreenFixEventHook)
 import XMonad.Util.NamedActions
 import XMonad.Util.NamedScratchpad
 import XMonad.Util.Run (spawnPipe)
@@ -465,8 +464,7 @@ main =
                         <||> className
                         =? "XTerm"
                     )
-                    (return True)
-                  <> trayerPaddingXmobarEventHook,
+                    (return True),
               modMask = myModMask,
               terminal = myTerminal,
               layoutHook = myLayoutHook,
