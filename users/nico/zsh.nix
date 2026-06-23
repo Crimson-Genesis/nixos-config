@@ -13,9 +13,8 @@
 
     settings = {
       add_newline = false;
-
       format = ''
-        $directory$git_branch$git_status$fill$status$cmd_duration$time
+        $directory$git_branch$git_status$nix_shell$fill$status$cmd_duration$time
         $character
       '';
 
@@ -63,6 +62,15 @@
       character = {
         success_symbol = "[❯](bold green)";
         error_symbol = "[❯](bold red)";
+      };
+      nix_shell = {
+        disabled = false;
+        symbol = " ❄";
+        impure_msg = "impure";
+        pure_msg = "pure";
+        unknown_msg = "shell";
+        style = "cyan";
+        format = "[$symbol $name]($style)";
       };
     };
   };

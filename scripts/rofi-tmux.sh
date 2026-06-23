@@ -1782,15 +1782,24 @@ cmd_session() {
 
 cmd_window_here() {
 
-    [[ -n "${TMUX:-}" ]] || return 1
+    [[ -n "${TMUX:-}" ]] || {
+        notify_error "Not running inside tmux"
+        return 1
+    }
 
     local session
-    local path
-    local flake
-    local prefix_json
+    session="$(tmux display-message -p '#S')" || {
+        notify_error "Failed to determine tmux session"
+        return 1
+    }
 
-    session="$(tmux display-message -p '#S')"
+    local path=""
+    local flake=""
+    local prefix_json='[]'
 
+    #
+    # Path from session metadata.
+    #
     path="$(
         tmux show-option \
             -t "$session" \
@@ -1798,10 +1807,23 @@ cmd_window_here() {
             2>/dev/null || true
     )"
 
-    [[ -n "$path" ]] || path="$(
-        tmux display-message \
-            -p '#{pane_current_path}'
-    )"
+    #
+    # Fallback to current pane path.
+    #
+    if [[ -z "$path" ]]; then
+
+        path="$(
+            tmux display-message \
+                -p '#{pane_current_path}' \
+                2>/dev/null || true
+        )"
+
+    fi
+
+    [[ -n "$path" ]] || {
+        notify_error "Unable to determine session path"
+        return 1
+    }
 
     #
     # Project lookup.
@@ -1819,7 +1841,8 @@ cmd_window_here() {
     #
     # Template fallback.
     #
-    if [[ -z "$flake" ]]; then
+    if [[ -z "$flake" ]] ||
+        [[ "$flake" == "null" ]]; then
 
         flake="$(
             db_get_template_flake "$session" \
@@ -1839,16 +1862,20 @@ cmd_window_here() {
     fi
 
     #
-    # Safety fallback.
+    # Normalize values.
     #
+    [[ "$flake" == "null" ]] &&
+        flake=""
+
     [[ -n "$prefix_json" ]] &&
-        [[ "$prefix_json" != "null" ]] ||
+        jq empty <<<"$prefix_json" >/dev/null 2>&1 ||
         prefix_json='[]'
 
     local prefix_cmds=()
 
     mapfile -t prefix_cmds < <(
-        jq -r '.[]' <<<"$prefix_json"
+        jq -r '.[]' <<<"$prefix_json" \
+            2>/dev/null || true
     )
 
     local window_id
@@ -1857,8 +1884,12 @@ cmd_window_here() {
         tmux new-window \
             -P \
             -F '#{window_id}' \
-            -c "$path"
-    )"
+            -c "$path" \
+            2>/dev/null
+    )" || {
+        notify_error "Failed to create tmux window"
+        return 1
+    }
 
     local cmd
 
@@ -1868,24 +1899,38 @@ cmd_window_here() {
             "${prefix_cmds[@]}"
     )"
 
+    #
+    # Flake session.
+    #
     if [[ -n "$flake" ]]; then
 
         tmux send-keys \
             -t "$window_id" \
             "export ROFI_TMUX_CMD=$(printf '%q' "$cmd")
 nix develop '$flake' -c zsh" \
-            C-m
+            C-m || {
 
-    else
+            notify_error "Failed to initialize flake shell"
+            return 1
+        }
 
-        [[ -n "$cmd" ]] &&
-            tmux send-keys \
-                -t "$window_id" \
-                "$cmd" \
-                C-m
+    #
+    # Normal session.
+    #
+    elif [[ -n "$cmd" ]]; then
+
+        tmux send-keys \
+            -t "$window_id" \
+            "$cmd" \
+            C-m || {
+
+            notify_error "Failed to execute prefix commands"
+            return 1
+        }
 
     fi
 
+    return 0
 }
 
 ################################################################################

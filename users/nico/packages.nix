@@ -20,6 +20,7 @@
     pinentry-qt
     doublecmd
     alsa-tools
+    haskellPackages.greenclip
 
     alacritty
     mpv
@@ -34,7 +35,6 @@
     tmux
 
     rofimoji
-    copyq
 
     flameshot
     xcolor

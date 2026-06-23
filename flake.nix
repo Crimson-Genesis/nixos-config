@@ -176,6 +176,7 @@
       ];
       shellHookSuffix = ''
         if [[ -n "''${ROFI_TMUX_CMD:-}" ]]; then
+          clear
           eval "$ROFI_TMUX_CMD"
           unset ROFI_TMUX_CMD
         fi

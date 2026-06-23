@@ -179,7 +179,6 @@ myFloatRules =
     className =? "htop" --> doRectFloat (W.RationalRect 0.02 0.02 0.96 0.96),
     className =? "nvtop" --> doRectFloat (W.RationalRect 0.10 0.10 0.80 0.80),
     className =? "Gcolor3" --> doCenterFloat,
-    className =? "copyq" --> doRectFloat (W.RationalRect 0.1 0.1 0.8 0.8),
     className =? "toipe" --> doCenterFloat,
     className =? "nmtui" --> doCenterFloat,
     className =? "pavucontrol" --> doCenterFloat,
@@ -254,8 +253,8 @@ myKeys c =
           ("M1-S-\\", addName "Launch toipe" $ spawn "toipe-toggle hard"),
           ("M-S-b", addName "Toggle bar show/hide" $ sendMessage ToggleStruts),
           ("M-/", addName "DTOS Help" $ spawn "~/.local/bin/dtos-help"),
-          ("M-c", addName "Clipboard History" $ spawn "copyq show"),
-          ("M-S-c", addName "Clear Clipboard" $ spawn "sh -c 'printf \"No\nYes\" | rofi -dmenu -p \"Clear Clipboard?\" | grep -qx Yes && copyq eval \"for(var i=count()-1;i>=0;--i) remove(i)\"'")
+          ("M-c", addName "Clipboard History" $ spawn "rofi -modi 'clipboard:greenclip print' -show clipboard"),
+          ("M-S-c", addName "Clear Clipboard" $ spawn "rm -f ~/.cache/greenclip.history && pkill greenclip 2>/dev/null; greenclip daemon >/dev/null 2>&1 & notify-send 'Greenclip' 'Clipboard history cleared'")
         ]
         ^++^ subKeys
           "Rofi Launchers"
@@ -459,7 +458,7 @@ myMouseBindings conf =
 myStartupHook :: X ()
 myStartupHook = do
   spawnOnce "xsetroot -cursor_name left_ptr"
-  spawnOnce "copyq"
+  spawnOnce "greenclip daemon"
   spawnOnce "picom"
   spawnOnce "xset r rate 125 120"
   spawnOnce "feh --bg-fill $HOME/.config/xmonad/wallpaper.jpg"
