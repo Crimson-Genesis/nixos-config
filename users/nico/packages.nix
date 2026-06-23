@@ -19,6 +19,7 @@
     trash-cli
     pinentry-qt
     doublecmd
+    alsa-tools
 
     alacritty
     mpv

@@ -210,6 +210,8 @@
     gopls
     asm-lsp
 
+    go
+    sqlite
     python3
     nodejs
     rustup
@@ -242,6 +244,9 @@
     polkit_gnome
     ngrok
     xwininfo
+
+    gcc
+    openssl
 
     qt6Packages.qt6ct
     qt6Packages.qtstyleplugin-kvantum

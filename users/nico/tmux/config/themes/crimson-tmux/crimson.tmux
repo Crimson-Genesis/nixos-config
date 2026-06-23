@@ -57,10 +57,10 @@ tmux set -g status-left "#[fg=${THEME[white]},bold] #S "
 # ------------------------------------------------------------------------------
 
 tmux set -g window-status-format \
-    "#[fg=${THEME[foreground]},bg=${THEME[background]}] #W "
+    "#[fg=colour240]#I#[fg=${THEME[foreground]}]:#W "
 
 tmux set -g window-status-current-format \
-    "#[fg=${THEME[background]},bg=${THEME[bwhite]},bold] #W "
+    "#[fg=${THEME[background]},bg=${THEME[bwhite]},bold]#I:#W "
 
 tmux set -g window-status-separator " "
 

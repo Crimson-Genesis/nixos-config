@@ -12,18 +12,7 @@ DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/rofi-tmux"
 PROJECT_DB="${DATA_DIR}/database.json"
 BACKUP_DIR="${DATA_DIR}/backups"
 
-#ROFI_CMD=(
-#    rofi
-#    -dmenu
-#    -i
-#    -multi-select
-#    -ballot-selected-str "● "
-#    -ballot-unselected-str "○ "
-#)
-
 ALACRITTY_CLASS_PREFIX="tmux"
-
-MAX_CREATE_ALL=5
 
 DEPENDENCIES=(
     jq
@@ -38,219 +27,204 @@ DEPENDENCIES=(
 # Help Text
 ################################################################################
 
-readonly HELP_TEXT="
-rofi-tmux - Project and Template Based tmux Manager
+readonly BOLD=$'\e[1m'
+readonly BLUE=$'\e[34m'
+readonly GREEN=$'\e[32m'
+readonly CYAN=$'\e[36m'
+readonly YELLOW=$'\e[33m'
+readonly RED=$'\e[31m'
+readonly RESET=$'\e[0m'
 
-USAGE
+readonly HELP_TEXT="
+${BLUE}${BOLD}rofi-tmux${RESET}
+Project and Template Based tmux Manager
+
+${CYAN}${BOLD}USAGE${RESET}
+
 rofi-tmux <command>
 
-PROJECT COMMANDS
+${GREEN}${BOLD}PROJECT COMMANDS${RESET}
 
 add
-Add the current working directory as a project.
+    Add the current directory as a project.
+
+    Stores:
+        • Path
+        • Optional flake
+        • Prefix commands
 
 edit
-Edit selected projects and/or templates.
+    Edit existing projects/templates.
 
 delete
-Delete selected projects and/or templates.
-Active tmux sessions are terminated first.
+    Remove projects/templates
+    from the database.
 
 cleanup
-Remove projects whose directories no longer exist.
-Active tmux sessions are terminated first.
+    Remove projects whose
+    directories no longer exist.
 
 list
-Display all stored projects and templates.
+    Print all projects/templates.
 
-TEMPLATE COMMANDS
+${GREEN}${BOLD}TEMPLATE COMMANDS${RESET}
 
 add-template
-Create a reusable template for the current directory.
+    Create a reusable tmux layout.
 
-SESSION COMMANDS
+    Stores:
+        • Name
+        • Path
+        • Optional flake
+        • Prefix commands
+        • Window commands
+
+${GREEN}${BOLD}SESSION COMMANDS${RESET}
 
 session
-Create, attach, or switch to project/template
-sessions.
+    Create, attach, or switch
+    tmux sessions.
 
-create-all
-Create tmux sessions for stored projects.
-Limited by MAX_CREATE_ALL.
+    Single selection:
+        • Creates session if needed
+        • Attaches/switches
+
+    Multi selection:
+        • Creates all missing sessions
+        • Opens a terminal per session
 
 kill
-Kill selected tmux sessions.
+    Kill selected tmux sessions.
 
 kill-all
-Kill all running tmux sessions.
+    Kill every active tmux session.
 
-WINDOW COMMANDS
-
-window
-Create tmux window(s) using selected
-project/template paths.
+${GREEN}${BOLD}WINDOW COMMANDS${RESET}
 
 window-here
-Create a numbered window in the current
-tmux session using the session root path.
+    Create a new window in the
+    current tmux session.
 
-BACKUP COMMANDS
+    Uses:
+        • Project root path
+        • Flake environment
+        • Prefix commands
+
+${GREEN}${BOLD}BACKUP COMMANDS${RESET}
 
 backup [directory]
-Create a timestamped database backup.
+    Create a timestamped database
+    backup.
 
-HELP
+${GREEN}${BOLD}FLAKE COMMANDS${RESET}
+
+add-flake-path <path> [...]
+    Register flake directories for
+    automatic shell discovery.
+
+cache-flakes
+    Refresh cached devShell list.
+
+list-flakes
+    Show cached flakes.
+
+${GREEN}${BOLD}HELP${RESET}
 
 help
 -h
 --help
 
-Show this help message.
+${CYAN}${BOLD}WORKFLOW EXAMPLES${RESET}
 
-WORKFLOW
+Project:
 
-Project
+    cd ~/project
+    rofi-tmux add
+    rofi-tmux session
 
-cd ~/projects/my-app
-rofi-tmux add
-rofi-tmux session
+Template:
 
-Template
+    cd ~/project
+    rofi-tmux add-template
+    rofi-tmux session
 
-cd ~/projects/my-app
-rofi-tmux add-template
-rofi-tmux session
+${CYAN}${BOLD}TEMPLATE WINDOWS${RESET}
 
-EDITING
+Window commands create tmux windows.
 
-rofi-tmux edit
+Examples:
 
-The edit command opens selected entries in Neovim.
+    [\"nvim\"]
+        One window running nvim
 
-Projects expose:
+    [\"nvim\", \"btop\"]
+        Two windows
 
-{
-    \"type\": \"project\",
-    \"_session\": \"...\",
-    \"_name\": \"...\",
-    \"path\": \"/path/to/project\"
-}
+    [\"\"]
+        One empty shell window
 
-Templates expose:
+    [\"nvim\", \"\"]
+        One nvim window
+        One empty shell window
 
-{
-    \"type\": \"template\",
-    \"_session\": \"...\",
-    \"name\": \"Development\",
-    \"path\": \"/path/to/project\",
-    \"startup\": \"nvim\",
-    \"windows\": [
-        \"btop\",
-        \"lazygit\"
-    ]
-}
+Rules:
 
-EDIT RULES
+    • At least one window entry
+      is required
 
-Projects
+    • Empty strings are allowed
 
-Editable:
-    path
+    • Whitespace-only strings are
+      treated as empty windows
 
-Automatically regenerated:
-    name
-    session
+${CYAN}${BOLD}PREFIX COMMANDS${RESET}
 
-Templates
+Prefix commands run before
+window commands.
 
-Editable:
-    name
-    path
-    startup
-    windows
+Example:
 
-Automatically regenerated when
-name or path changes:
-    session
+    prefix:
+        [\"cd backend\"]
 
-PROTECTED FIELDS
+    window:
+        \"nvim\"
 
-_session
-_name
+Result:
 
-These fields are informational only.
+    cd backend && nvim
 
-Changes to these fields are ignored.
+${CYAN}${BOLD}DATABASE${RESET}
 
-VALIDATION
+${YELLOW}${PROJECT_DB}${RESET}
 
-Projects
+${CYAN}${BOLD}BACKUPS${RESET}
 
-• Path must exist
-• Path cannot be empty
-• Duplicate project paths are rejected
+${YELLOW}${BACKUP_DIR}${RESET}
 
-Templates
-
-• Name cannot be empty
-• Path must exist
-• Startup command must exist
-• Windows must contain at least one command
-• Every command must exist on PATH
-
-SESSION REGENERATION
-
-Project
-
-Changing path:
-    old-session -> new-session
-
-Template
-
-Changing name or path:
-    old-session -> new-session
-
-If the old tmux session is running,
-it is terminated before regeneration.
-
-DATA FILES
-
-Database:
-${PROJECT_DB}
-
-Data Directory:
-${DATA_DIR}
-
-Backup Directory:
-${BACKUP_DIR}
-
-FEATURES
-
-• Project management
-• Template management
-• Multi-select support
-• Active session highlighting
-• Session creation and attachment
-• Automatic backups
-• Session cleanup
-• Project editing
-• Template editing
-• Persistent JSON database
-
-NOTES
+${CYAN}${BOLD}NOTES${RESET}
 
 [P] = Project
 [T] = Template
 
-Projects
+Session names are generated
+automatically and remain unique.
 
-Startup command:
-    exec zsh
+Editing a project's path or a
+template's name/path may create
+a new session identifier.
 
-Templates
+${RED}${BOLD}WARNING${RESET}
 
-Custom startup command
-Custom window layout
+delete
+    Removes database entries.
+
+cleanup
+    Removes missing projects and
+    may kill matching tmux sessions.
+
+kill-all
+    Kills every active tmux session.
 
 "
 
@@ -297,6 +271,10 @@ ensure_database() {
     if [[ ! -f "$PROJECT_DB" ]]; then
         cat >"$PROJECT_DB" <<'EOF'
 {
+  "flakes": {
+     "paths": [],
+     "cache": []
+   },
   "projects": [],
   "templates": []
 }
@@ -309,7 +287,7 @@ EOF
 ################################################################################
 
 show_help() {
-    printf '%s\n' "$HELP_TEXT" | less -FRX
+    printf '%b\n' "$HELP_TEXT" | less -FRX -R
 }
 
 normalize_entries() {
@@ -478,6 +456,85 @@ db_get_templates() {
     jq -c '.templates[]' "$PROJECT_DB"
 }
 
+db_get_flake_paths() {
+
+    jq -r '
+        .flakes.paths[]
+    ' "$PROJECT_DB"
+}
+
+db_get_cached_flakes() {
+
+    jq -r '
+        .flakes.cache[]
+    ' "$PROJECT_DB"
+}
+
+db_add_flake_cache_entry() {
+
+    local flake="$1"
+
+    local tmp
+    tmp="$(mktemp)"
+
+    jq \
+        --arg flake "$flake" '
+        .flakes.cache += [$flake]
+        | .flakes.cache |= unique
+        ' \
+        "$PROJECT_DB" >"$tmp"
+
+    mv "$tmp" "$PROJECT_DB"
+}
+
+db_clear_flake_cache() {
+
+    local tmp
+    tmp="$(mktemp)"
+
+    jq '
+        .flakes.cache = []
+    ' \
+        "$PROJECT_DB" >"$tmp"
+
+    mv "$tmp" "$PROJECT_DB"
+}
+
+cache_flakes() {
+
+    db_clear_flake_cache
+
+    local path
+    local system
+
+    system="$(nix eval --impure --raw --expr builtins.currentSystem)"
+
+    while IFS= read -r path; do
+
+        [[ -d "$path" ]] || continue
+
+        while IFS= read -r flake; do
+
+            [[ -n "$flake" ]] || continue
+
+            db_add_flake_cache_entry \
+                "${path}#${flake}"
+
+        done < <(
+
+            nix flake show "$path" --json 2>/dev/null |
+                jq -r \
+                    --arg system "$system" '
+                .devShells[$system]
+                | keys[]
+                '
+        )
+
+    done < <(
+        db_get_flake_paths
+    )
+}
+
 db_project_exists() {
     local path="$1"
 
@@ -504,18 +561,6 @@ db_add_template() {
     mv "$tmp" "$PROJECT_DB"
 }
 
-db_get_template_by_session() {
-    local session="$1"
-
-    jq -c \
-        --arg session "$session" \
-        '
-        .templates[]
-        | select(.session == $session)
-        ' \
-        "$PROJECT_DB"
-}
-
 db_remove_template_by_session() {
     local session="$1"
 
@@ -532,19 +577,6 @@ db_remove_template_by_session() {
         "$PROJECT_DB" >"$tmp"
 
     mv "$tmp" "$PROJECT_DB"
-}
-
-db_get_template_startup() {
-    local session="$1"
-
-    jq -r \
-        --arg session "$session" \
-        '
-        .templates[]
-        | select(.session == $session)
-        | .startup
-        ' \
-        "$PROJECT_DB"
 }
 
 db_get_template_windows() {
@@ -573,18 +605,6 @@ db_get_template_path() {
         "$PROJECT_DB"
 }
 
-db_is_template_session() {
-    local session="$1"
-
-    jq -e \
-        --arg session "$session" \
-        '
-        .templates[]
-        | select(.session == $session)
-        ' \
-        "$PROJECT_DB" >/dev/null
-}
-
 session_exists_in_database() {
 
     local session="$1"
@@ -609,7 +629,9 @@ session_exists_in_database() {
 db_add_project() {
     local name="$1"
     local path="$2"
-    local session="$3"
+    local flake="$3"
+    local prefix="$4"
+    local session="$5"
 
     local tmp
     tmp=$(mktemp)
@@ -617,11 +639,15 @@ db_add_project() {
     jq \
         --arg name "$name" \
         --arg path "$path" \
+        --arg flake "$flake" \
+        --argjson prefix "$prefix" \
         --arg session "$session" \
         '
         .projects += [{
             "name": $name,
             "path": $path,
+            "flake": $flake,
+            "prefix": $prefix,
             "session": $session
         }]
         ' \
@@ -655,6 +681,58 @@ db_get_path_from_session() {
         .projects[]
         | select(.session == $session)
         | .path
+        ' \
+        "$PROJECT_DB"
+}
+
+db_get_project_flake() {
+    local session="$1"
+
+    jq -r \
+        --arg session "$session" \
+        '
+        .projects[]
+        | select(.session == $session)
+        | .flake
+        ' \
+        "$PROJECT_DB"
+}
+
+db_get_project_prefix() {
+    local session="$1"
+
+    jq -c \
+        --arg session "$session" \
+        '
+        .projects[]
+        | select(.session == $session)
+        | .prefix
+        ' \
+        "$PROJECT_DB"
+}
+
+db_get_template_flake() {
+    local session="$1"
+
+    jq -r \
+        --arg session "$session" \
+        '
+        .templates[]
+        | select(.session == $session)
+        | .flake
+        ' \
+        "$PROJECT_DB"
+}
+
+db_get_template_prefix() {
+    local session="$1"
+
+    jq -c \
+        --arg session "$session" \
+        '
+        .templates[]
+        | select(.session == $session)
+        | .prefix
         ' \
         "$PROJECT_DB"
 }
@@ -706,41 +784,194 @@ tmux_session_exists() {
         >/dev/null 2>&1
 }
 
+build_window_command() {
+
+    local command="$1"
+    shift
+
+    local prefix_cmds=("$@")
+
+    local full_cmd=""
+
+    if ((${#prefix_cmds[@]})); then
+        full_cmd="$(printf '%s && ' "${prefix_cmds[@]}")"
+        full_cmd="${full_cmd% && }"
+    fi
+
+    if [[ -n "$command" ]]; then
+
+        [[ -n "$full_cmd" ]] &&
+            full_cmd+=" && "
+
+        full_cmd+="$command"
+    fi
+
+    printf '%s\n' "$full_cmd"
+}
+
 create_session() {
+
     local session="$1"
     local path="$2"
-    local startup_cmd="${3:-exec zsh}"
+    local flake="$3"
+    local prefix_json="$4"
+
+    shift 4
+
+    local window_commands=("$@")
+
+    local prefix_cmds=()
+
+    mapfile -t prefix_cmds < <(
+        jq -r '.[]' <<<"$prefix_json"
+    )
 
     tmux new-session \
         -d \
         -s "$session" \
-        -c "$path" \
-        "$startup_cmd"
+        -c "$path"
 
     tmux set-option \
         -t "$session" \
         @header "$path"
 
-    tmux new-window \
-        -t "$session" \
-        -n "Terminal" \
-        -c "$path" \
-        -d
+    local window_id
+    local cmd
 
-    notify_low "Created session: $session"
-}
+    #
+    # PROJECT
+    #
+    if ((${#window_commands[@]} == 0)); then
 
-create_session_if_missing() {
-    local session="$1"
-    local path="$2"
-    local startup_cmd="${3:-exec zsh}"
+        #
+        # tw0
+        #
+        window_id="$(
+            tmux list-windows \
+                -t "$session" \
+                -F '#{window_id}' |
+                head -n1
+        )"
 
-    if ! tmux_session_exists "$session"; then
-        create_session \
-            "$session" \
-            "$path" \
-            "$startup_cmd"
+        cmd="$(
+            build_window_command \
+                "" \
+                "${prefix_cmds[@]}"
+        )"
+
+        if [[ -n "$flake" ]]; then
+
+            tmux send-keys \
+                -t "$window_id" \
+                "export ROFI_TMUX_CMD=$(printf '%q' "$cmd")
+nix develop '$flake' -c zsh" \
+                C-m
+
+        else
+
+            [[ -n "$cmd" ]] &&
+                tmux send-keys \
+                    -t "$window_id" \
+                    "$cmd" \
+                    C-m
+
+        fi
+
+        #
+        # tw1
+        #
+        window_id="$(
+            tmux new-window \
+                -d \
+                -P \
+                -F '#{window_id}' \
+                -t "$session" \
+                -c "$path"
+        )"
+
+        if [[ -n "$flake" ]]; then
+
+            tmux send-keys \
+                -t "$window_id" \
+                "export ROFI_TMUX_CMD=$(printf '%q' "$cmd")
+nix develop '$flake' -c zsh" \
+                C-m
+
+        else
+
+            [[ -n "$cmd" ]] &&
+                tmux send-keys \
+                    -t "$window_id" \
+                    "$cmd" \
+                    C-m
+
+        fi
+
+    #
+    # TEMPLATE
+    #
+    else
+
+        local index=0
+        local window_cmd
+
+        for window_cmd in "${window_commands[@]}"; do
+
+            if ((index == 0)); then
+
+                window_id="$(
+                    tmux list-windows \
+                        -t "$session" \
+                        -F '#{window_id}' |
+                        head -n1
+                )"
+
+            else
+
+                window_id="$(
+                    tmux new-window \
+                        -d \
+                        -P \
+                        -F '#{window_id}' \
+                        -t "$session" \
+                        -n "$index" \
+                        -c "$path"
+                )"
+
+            fi
+
+            cmd="$(
+                build_window_command \
+                    "$window_cmd" \
+                    "${prefix_cmds[@]}"
+            )"
+
+            if [[ -n "$flake" ]]; then
+
+                tmux send-keys \
+                    -t "$window_id" \
+                    "export ROFI_TMUX_CMD=$(printf '%q' "$cmd")
+                    nix develop '$flake' -c zsh" \
+                    C-m
+
+            else
+
+                [[ -n "$cmd" ]] &&
+                    tmux send-keys \
+                        -t "$window_id" \
+                        "$cmd" \
+                        C-m
+
+            fi
+
+            ((++index))
+
+        done
+
     fi
+
+    notify_low \
+        "Created session: $session"
 }
 
 ################################################################################
@@ -886,45 +1117,479 @@ spawn_session_terminal() {
 ################################################################################
 # ADD
 ################################################################################
+validate_commands() {
 
-cmd_add() {
+    local file="$1"
+
+    local cmd
+    local flake
+
+    #
+    # Validate flake.
+    #
+    flake="$(
+        jq -r '.flake // ""' "$file"
+    )"
+
+    if [[ -n "$flake" ]]; then
+
+        if ! db_get_cached_flakes |
+            grep -Fxq -- "$flake"; then
+
+            notify_error \
+                "Invalid flake: $flake"
+
+            return 1
+
+        fi
+
+    fi
+
+    #
+    # Validate prefix commands.
+    #
+    while IFS= read -r cmd; do
+
+        [[ -n "$cmd" ]] || {
+
+            notify_error \
+                "Empty prefix command"
+
+            return 1
+        }
+
+        if ! command -v "${cmd%% *}" >/dev/null 2>&1; then
+
+            notify_error \
+                "Invalid prefix command: $cmd"
+
+            return 1
+
+        fi
+
+    done < <(
+        jq -r '
+            .prefix[]?
+        ' "$file"
+    )
+
+    #
+    # Validate window commands.
+    #
+    while IFS= read -r cmd; do
+
+        #
+        # Skip empty/whitespace-only entries.
+        #
+        if [[ -z "${cmd//[[:space:]]/}" ]]; then
+            continue
+        fi
+
+        if ! command -v "${cmd%% *}" >/dev/null 2>&1; then
+
+            notify_error \
+                "Invalid window command: $cmd"
+
+            return 1
+
+        fi
+
+    done < <(
+        jq -r '
+        .windows[]?
+    ' "$file"
+    )
+
+    return 0
+}
+
+validate_path() {
+
+    local path="$1"
+
+    [[ -d "$path" ]] && return 0
+
+    local action
+
+    action="$(
+        printf "Edit Again\nCreate Path\nCancel\n" |
+            rofi \
+                -dmenu \
+                -p "Path Does Not Exist" ||
+            true
+    )"
+
+    case "$action" in
+
+    "Edit Again")
+        return 2
+        ;;
+
+    "Create Path")
+
+        mkdir -p -- "$path" || {
+
+            notify_error \
+                "Failed to create path"
+
+            return 1
+        }
+
+        return 0
+        ;;
+
+    *)
+
+        return 1
+        ;;
+
+    esac
+}
+
+cmd_add_entry() {
+
+    local type="$1" # project | template
 
     local path
     local name
     local session
+    local tmp
+    local merged
 
     path="$(pwd -L)"
-    name="$(basename "$path")"
 
-    if db_project_exists "$path"; then
+    #
+    # Duplicate project check.
+    #
+    if [[ "$type" == "project" ]]; then
 
-        notify_error "Project already exists"
+        if db_project_exists "$path"; then
 
-        return 1
+            notify_error \
+                "Project already exists"
+
+            return 1
+        fi
+
     fi
 
-    session="$(generate_session_name "$path")"
+    tmp="$(mktemp)"
 
-    db_add_project \
-        "$name" \
-        "$path" \
-        "$session"
+    #
+    # Initial config.
+    #
+    local flakes
 
-    notify_info "Added $session"
+    flakes="$(
+        db_get_cached_flakes |
+            awk '
+            NR == 1 { printf "%s", $0; next }
+            { printf " | %s", $0 }
+        '
+    )"
 
-    return 0
+    if [[ "$type" == "project" ]]; then
+
+        cat >"$tmp" <<EOF
+{
+    "path": "$path",
+    "flake": "$flakes",
+    "prefix": []
+}
+EOF
+
+    else
+
+        cat >"$tmp" <<EOF
+{
+    "name": "",
+    "path": "$path",
+    "flake": "$flakes",
+    "prefix": [],
+    "windows": [
+        "nvim",
+        "btop"
+    ]
+}
+EOF
+
+    fi
+    while :; do
+
+        alacritty \
+            --class "${APP_NAME}-editor" \
+            -e nvim "$tmp"
+
+        #
+        # JSON validation.
+        #
+        if ! jq empty "$tmp" >/dev/null 2>&1; then
+
+            local action
+
+            action="$(
+                printf "Edit Again\nCancel\n" |
+                    rofi \
+                        -dmenu \
+                        -p "Invalid JSON"
+            )"
+
+            [[ "$action" == "Edit Again" ]] && continue
+
+            rm -f "$tmp"
+            return 0
+
+        fi
+
+        #
+        # Project validation.
+        #
+        if [[ "$type" == "project" ]]; then
+
+            if ! jq -e '
+                (.path | type == "string")
+                and
+                (.path | test("\\S"))
+
+                and
+
+                (.flake | type == "string")
+
+                and
+
+                (.prefix | type == "array")
+
+                and
+
+                (
+                    all(
+                        .prefix[];
+                        type == "string"
+                    )
+                )
+            ' "$tmp" >/dev/null 2>&1; then
+
+                local action
+
+                action="$(
+                    printf "Edit Again\nCancel\n" |
+                        rofi \
+                            -dmenu \
+                            -p "Invalid Project"
+                )"
+
+                [[ "$action" == "Edit Again" ]] && continue
+
+                rm -f "$tmp"
+                return 0
+
+            fi
+
+        #
+        # Template validation.
+        #
+        else
+
+            if ! jq -e '
+                (.name | type == "string")
+                and
+                (.name | test("\\S"))
+                and
+                (
+                    (.name | test("^\\*+$"))
+                    | not
+                )
+
+                and
+
+                (.path | type == "string")
+                and
+                (.path | test("\\S"))
+
+                and
+
+                (.flake | type == "string")
+
+                and
+
+                (.prefix | type == "array")
+
+                and
+
+                (
+                    all(
+                        .prefix[];
+                        type == "string"
+                    )
+                )
+
+                and
+
+                (.windows | type == "array")
+
+                and
+
+                (.windows | length > 0)
+
+                and
+
+                (
+                    all(
+                        .windows[];
+                        type == "string"
+                    )
+                )
+            ' "$tmp" >/dev/null 2>&1; then
+
+                local action
+
+                action="$(
+                    printf "Edit Again\nCancel\n" |
+                        rofi \
+                            -dmenu \
+                            -p "Invalid Template"
+                )"
+
+                [[ "$action" == "Edit Again" ]] && continue
+
+                rm -f "$tmp"
+                return 0
+
+            fi
+
+        fi
+        if ! validate_commands "$tmp"; then
+
+            local action
+
+            action="$(
+                printf "Edit Again\nCancel\n" |
+                    rofi \
+                        -dmenu \
+                        -p "Invalid Commands"
+            )"
+
+            [[ "$action" == "Edit Again" ]] && continue
+
+            rm -f "$tmp"
+            return 0
+
+        fi
+
+        path="$(jq -r '.path' "$tmp")"
+
+        validate_path "$path"
+
+        case $? in
+
+        0)
+            break
+            ;;
+
+        2)
+            continue
+            ;;
+
+        *)
+
+            rm -f "$tmp"
+            return 0
+            ;;
+
+        esac
+        break
+
+    done
+
+    #
+    # Save project.
+    #
+    if [[ "$type" == "project" ]]; then
+
+        path="$(jq -r '.path' "$tmp")"
+
+        if db_project_exists "$path"; then
+
+            notify_error \
+                "Project already exists"
+
+            rm -f "$tmp"
+            return 1
+
+        fi
+
+        local flake
+        local prefix
+
+        flake="$(jq -r '.flake' "$tmp")"
+        prefix="$(jq -c '.prefix' "$tmp")"
+
+        session="$(
+            generate_session_name "$path"
+        )"
+
+        name="$(basename "$path")"
+
+        db_add_project \
+            "$name" \
+            "$path" \
+            "$flake" \
+            "$prefix" \
+            "$session"
+
+        rm -f "$tmp"
+
+        notify_info \
+            "Added project: $session"
+
+        return 0
+
+    fi
+
+    #
+    # Save template.
+    #
+    name="$(jq -r '.name' "$tmp")"
+    path="$(jq -r '.path' "$tmp")"
+    session="$(
+        generate_template_session_name \
+            "$path" \
+            "$name"
+    )"
+
+    merged="$(mktemp)"
+
+    jq \
+        --arg path "$path" \
+        --arg session "$session" \
+        '
+        . + {
+            path: $path,
+            session: $session
+        }
+        ' \
+        "$tmp" >"$merged"
+
+    db_add_template "$merged"
+
+    rm -f \
+        "$tmp" \
+        "$merged"
+
+    notify_info \
+        "Added template: $name"
 }
 
 ################################################################################
 # SESSION
 ################################################################################
-
 cmd_session() {
 
     local selections
 
     selections="$(
-        rofi_pro_temp_selector "Tmux Session"
+        rofi_pro_temp_selector \
+            "Tmux Session"
     )"
 
     [[ -n "$selections" ]] || return 0
@@ -946,29 +1611,73 @@ cmd_session() {
 
         if [[ "$type" == "[T]" ]]; then
 
-            create_session_from_template \
-                "$session"
+            local path
+            local flake
+            local prefix
+
+            path="$(
+                db_get_template_path "$session"
+            )"
+
+            flake="$(
+                db_get_template_flake "$session"
+            )"
+
+            prefix="$(
+                db_get_template_prefix "$session"
+            )"
+
+            mapfile -t windows < <(
+                db_get_template_windows "$session"
+            )
+
+            if ! tmux_session_exists "$session"; then
+
+                create_session \
+                    "$session" \
+                    "$path" \
+                    "$flake" \
+                    "$prefix" \
+                    "${windows[@]}"
+
+            fi
 
         else
 
             local path
+            local flake
+            local prefix
 
             path="$(
                 db_get_path_from_session "$session"
             )"
 
+            flake="$(
+                db_get_project_flake "$session"
+            )"
+
+            prefix="$(
+                db_get_project_prefix "$session"
+            )"
+
             [[ -n "$path" ]] || return 1
 
-            create_session_if_missing \
-                "$session" \
-                "$path" \
-                "exec zsh"
+            if ! tmux_session_exists "$session"; then
+
+                create_session \
+                    "$session" \
+                    "$path" \
+                    "$flake" \
+                    "$prefix"
+            fi
+
         fi
 
         attach_or_switch_session \
             "$session"
 
         return 0
+
     fi
 
     #
@@ -980,7 +1689,6 @@ cmd_session() {
     fi
 
     local created=0
-
     local i
 
     for i in "${!entry_sessions[@]}"; do
@@ -997,19 +1705,54 @@ cmd_session() {
                 "Ignored existing session: $session"
 
             continue
+
         fi
 
         if [[ "$type" == "[T]" ]]; then
 
-            create_session_from_template \
-                "$session"
+            local path
+            local flake
+            local prefix
+
+            path="$(
+                db_get_template_path "$session"
+            )"
+
+            flake="$(
+                db_get_template_flake "$session"
+            )"
+
+            prefix="$(
+                db_get_template_prefix "$session"
+            )"
+
+            mapfile -t windows < <(
+                db_get_template_windows "$session"
+            )
+
+            create_session \
+                "$session" \
+                "$path" \
+                "$flake" \
+                "$prefix" \
+                "${windows[@]}"
 
         else
 
             local path
+            local flake
+            local prefix
 
             path="$(
                 db_get_path_from_session "$session"
+            )"
+
+            flake="$(
+                db_get_project_flake "$session"
+            )"
+
+            prefix="$(
+                db_get_project_prefix "$session"
             )"
 
             [[ -n "$path" ]] || continue
@@ -1017,7 +1760,9 @@ cmd_session() {
             create_session \
                 "$session" \
                 "$path" \
-                "exec zsh"
+                "$flake" \
+                "$prefix"
+
         fi
 
         spawn_session_terminal \
@@ -1032,113 +1777,6 @@ cmd_session() {
 }
 
 ################################################################################
-# WINDOW
-################################################################################
-
-cmd_window() {
-
-    if [[ -z "${TMUX:-}" ]]; then
-
-        notify_error \
-            "window command requires tmux"
-
-        return 1
-    fi
-
-    local selections
-
-    selections="$(
-        rofi_pro_temp_selector "Create Windows"
-    )"
-
-    [[ -n "$selections" ]] || return 0
-
-    mapfile -t entries <<<"$selections"
-
-    normalize_entries
-
-    #
-    # Single selection
-    #
-    if [[ ${#entry_sessions[@]} -eq 1 ]]; then
-
-        local session
-        local type
-        local path
-
-        session="${entry_sessions[0]}"
-        type="${entry_types[0]}"
-
-        if [[ "$type" == "[T]" ]]; then
-
-            path="$(
-                db_get_template_path "$session"
-            )"
-
-        else
-
-            path="$(
-                db_get_path_from_session "$session"
-            )"
-
-        fi
-
-        [[ -n "$path" && -d "$path" ]] || return 1
-
-        tmux new-window \
-            -c "$path"
-
-        return 0
-    fi
-
-    #
-    # Multi selection
-    #
-    if ! rofi_confirm "Create Windows?"; then
-        return 0
-    fi
-
-    local created=0
-    local i
-
-    for i in "${!entry_sessions[@]}"; do
-
-        local session
-        local type
-        local path
-
-        session="${entry_sessions[$i]}"
-        type="${entry_types[$i]}"
-
-        if [[ "$type" == "[T]" ]]; then
-
-            path="$(
-                db_get_template_path "$session"
-            )"
-
-        else
-
-            path="$(
-                db_get_path_from_session "$session"
-            )"
-
-        fi
-
-        [[ -n "$path" && -d "$path" ]] || continue
-
-        tmux new-window \
-            -d \
-            -c "$path"
-
-        ((++created))
-
-    done
-
-    notify_info \
-        "Created $created window(s)"
-}
-
-################################################################################
 # WINDOW HERE
 ################################################################################
 
@@ -1148,6 +1786,8 @@ cmd_window_here() {
 
     local session
     local path
+    local flake
+    local prefix_json
 
     session="$(tmux display-message -p '#S')"
 
@@ -1164,34 +1804,88 @@ cmd_window_here() {
     )"
 
     #
-    # Collect existing numeric window names.
+    # Project lookup.
     #
-    declare -A used
+    flake="$(
+        db_get_project_flake "$session" \
+            2>/dev/null || true
+    )"
 
-    while IFS= read -r name; do
+    prefix_json="$(
+        db_get_project_prefix "$session" \
+            2>/dev/null || true
+    )"
 
-        [[ "$name" =~ ^[0-9]+$ ]] || continue
+    #
+    # Template fallback.
+    #
+    if [[ -z "$flake" ]]; then
 
-        used["$name"]=1
+        flake="$(
+            db_get_template_flake "$session" \
+                2>/dev/null || true
+        )"
 
-    done < <(
-        tmux list-windows \
-            -t "$session" \
-            -F '#W'
+    fi
+
+    if [[ -z "$prefix_json" ]] ||
+        [[ "$prefix_json" == "null" ]]; then
+
+        prefix_json="$(
+            db_get_template_prefix "$session" \
+                2>/dev/null || true
+        )"
+
+    fi
+
+    #
+    # Safety fallback.
+    #
+    [[ -n "$prefix_json" ]] &&
+        [[ "$prefix_json" != "null" ]] ||
+        prefix_json='[]'
+
+    local prefix_cmds=()
+
+    mapfile -t prefix_cmds < <(
+        jq -r '.[]' <<<"$prefix_json"
     )
 
-    #
-    # Find lowest missing number.
-    #
-    local n=0
+    local window_id
 
-    while [[ -n "${used[$n]:-}" ]]; do
-        ((++n))
-    done
+    window_id="$(
+        tmux new-window \
+            -P \
+            -F '#{window_id}' \
+            -c "$path"
+    )"
 
-    tmux new-window \
-        -n "$n" \
-        -c "$path"
+    local cmd
+
+    cmd="$(
+        build_window_command \
+            "" \
+            "${prefix_cmds[@]}"
+    )"
+
+    if [[ -n "$flake" ]]; then
+
+        tmux send-keys \
+            -t "$window_id" \
+            "export ROFI_TMUX_CMD=$(printf '%q' "$cmd")
+nix develop '$flake' -c zsh" \
+            C-m
+
+    else
+
+        [[ -n "$cmd" ]] &&
+            tmux send-keys \
+                -t "$window_id" \
+                "$cmd" \
+                C-m
+
+    fi
+
 }
 
 ################################################################################
@@ -1241,281 +1935,6 @@ generate_template_session_name() {
 }
 
 ################################################################################
-# ADD TEMPLATE
-################################################################################
-validate_template_commands() {
-
-    local file="$1"
-
-    local startup
-
-    startup="$(
-        jq -r '.startup' "$file"
-    )"
-
-    command -v "${startup%% *}" >/dev/null 2>&1 || {
-        notify_error \
-            "Invalid startup command: $startup"
-        return 1
-    }
-
-    while IFS= read -r cmd; do
-
-        command -v "${cmd%% *}" >/dev/null 2>&1 || {
-
-            notify_error \
-                "Invalid window command: $cmd"
-
-            return 1
-        }
-
-    done < <(
-        jq -r '.windows[]' "$file"
-    )
-}
-
-cmd_add_template() {
-
-    local path
-    local template_name
-    local session
-
-    path="$(pwd -L)"
-
-    template_name="$(
-        rofi \
-            -dmenu \
-            -p "Template Name"
-    )"
-
-    [[ -n "$template_name" ]] || return 0
-
-    session="$(
-        generate_template_session_name \
-            "$path" \
-            "$template_name"
-    )"
-
-    local tmp
-    tmp="$(mktemp)"
-
-    cat >"$tmp" <<'EOF'
-{
-    "startup": "nvim",
-
-    "windows": [
-        "btop"
-    ]
-}
-EOF
-
-    while :; do
-        alacritty \
-            --class "${APP_NAME}-editor" \
-            -e nvim "$tmp"
-
-        #
-        # JSON validation
-        #
-        if ! jq empty "$tmp" >/dev/null 2>&1; then
-
-            local action
-
-            action="$(
-                printf "Edit Config\nCancel\n" |
-                    rofi \
-                        -dmenu \
-                        -p "Invalid JSON"
-            )"
-
-            if [[ "$action" == "Edit Config" ]]; then
-                continue
-            fi
-
-            rm -f "$tmp"
-            return 0
-        fi
-
-        #
-        # Structure validation
-        #
-        if ! jq -e '
-            (.startup | type == "string") and
-            (.startup != "") and
-
-            (.windows | type == "array") and
-            (.windows | length > 0) and
-
-            (
-                all(
-                    .windows[];
-                    type == "string" and . != ""
-                )
-            )
-        ' "$tmp" >/dev/null 2>&1; then
-
-            local action
-
-            action="$(
-                printf "Edit Config\nCancel\n" |
-                    rofi \
-                        -dmenu \
-                        -p "Invalid Template"
-            )"
-
-            if [[ "$action" == "Edit Config" ]]; then
-                continue
-            fi
-
-            rm -f "$tmp"
-            return 0
-        fi
-
-        #
-        # Command validation
-        #
-        if ! validate_template_commands "$tmp"; then
-
-            local action
-
-            action="$(
-                printf "Edit Config\nCancel\n" |
-                    rofi \
-                        -dmenu \
-                        -p "Invalid Command"
-            )"
-
-            if [[ "$action" == "Edit Config" ]]; then
-                continue
-            fi
-
-            rm -f "$tmp"
-            return 0
-        fi
-
-        break
-
-    done
-
-    local merged
-    merged="$(mktemp)"
-
-    jq \
-        --arg name "$template_name" \
-        --arg path "$path" \
-        --arg session "$session" \
-        '
-        . + {
-            name: $name,
-            path: $path,
-            session: $session
-        }
-        ' \
-        "$tmp" >"$merged"
-
-    db_add_template "$merged"
-
-    rm -f \
-        "$tmp" \
-        "$merged"
-
-    notify_info \
-        "Template added: $template_name"
-}
-
-################################################################################
-# CREATE TEMPLATE SESSION HELPER
-################################################################################
-
-create_session_from_template() {
-
-    local session="$1"
-
-    db_is_template_session "$session" || {
-
-        notify_error \
-            "Template not found: $session"
-
-        return 1
-    }
-
-    local path
-    local startup
-
-    path="$(db_get_template_path "$session")"
-    startup="$(db_get_template_startup "$session")"
-
-    if [[ -z "$path" || ! -d "$path" ]]; then
-
-        notify_error \
-            "Invalid template path"
-
-        return 1
-    fi
-
-    [[ -n "$startup" ]] || startup="exec zsh"
-
-    if tmux_session_exists "$session"; then
-
-        notify_low \
-            "Session already exists: $session"
-
-        return 0
-    fi
-
-    tmux new-session \
-        -d \
-        -s "$session" \
-        -c "$path"
-
-    local startup_window
-
-    startup_window="$(
-        tmux list-windows \
-            -t "$session" \
-            -F '#{window_id}' |
-            head -n1
-    )"
-
-    [[ -n "$startup" ]] &&
-        tmux send-keys \
-            -t "$startup_window" \
-            "$startup" \
-            C-m
-
-    local index=1
-    local window_id
-
-    while IFS= read -r window_cmd; do
-
-        [[ -n "$window_cmd" ]] || continue
-
-        window_id="$(
-            tmux new-window \
-                -d \
-                -P \
-                -F '#{window_id}' \
-                -t "$session" \
-                -n "$index" \
-                -c "$path"
-        )"
-
-        tmux send-keys \
-            -t "$window_id" \
-            "$window_cmd" \
-            C-m
-
-        ((++index))
-
-    done < <(
-        db_get_template_windows "$session"
-    )
-
-    notify_low \
-        "Created template session: $session"
-}
-
-################################################################################
 # EDIT
 ################################################################################
 
@@ -1551,7 +1970,9 @@ build_edit_json() {
                         type: "project",
                         _session: .session,
                         _name: .name,
-                        path
+                        path,
+                        flake,
+                        prefix
                     }
                     ' \
                     "$PROJECT_DB"
@@ -1570,7 +1991,8 @@ build_edit_json() {
                         _session: .session,
                         name,
                         path,
-                        startup,
+                        flake,
+                        prefix,
                         windows
                     }
                     ' \
@@ -1608,7 +2030,25 @@ validate_edit_structure() {
                 and
 
                 (.path | type == "string")
-                and (.path != "")
+                and
+                (.path | test("\\S"))
+
+                and
+
+                (.flake | type == "string")
+
+                and
+
+                (.prefix | type == "array")
+
+                and
+
+                (
+                    all(
+                        .prefix[];
+                        type == "string"
+                    )
+                )
             )
 
             or
@@ -1619,29 +2059,52 @@ validate_edit_structure() {
                 and
 
                 (.name | type == "string")
-                and (.name != "")
+                and
+                (.name | test("\\S"))
+
+                and
+                (
+                    (.name | test("^\\*+$"))
+                    | not
+                )
 
                 and
 
                 (.path | type == "string")
-                and (.path != "")
+                and
+                (.path | test("\\S"))
 
                 and
 
-                (.startup | type == "string")
-                and (.startup != "")
+                (.flake | type == "string")
+
+                and
+
+                (.prefix | type == "array")
+
+                and
+
+                (
+                    all(
+                        .prefix[];
+                        type == "string"
+                    )
+                )
 
                 and
 
                 (.windows | type == "array")
-                and (.windows | length > 0)
+
+                and
+
+                (.windows | length > 0)
 
                 and
 
                 (
                     all(
                         .windows[];
-                        type == "string" and . != ""
+                        type == "string"
                     )
                 )
             )
@@ -1649,7 +2112,7 @@ validate_edit_structure() {
     ' "$file" >/dev/null 2>&1
 }
 
-validate_edited_templates() {
+validate_edited_commands() {
 
     local file="$1"
 
@@ -1660,14 +2123,9 @@ validate_edited_templates() {
 
         tmp="$(mktemp)"
 
-        jq '
-            {
-                startup,
-                windows
-            }
-        ' <<<"$template" >"$tmp"
+        printf '%s\n' "$template" >"$tmp"
 
-        if ! validate_template_commands "$tmp"; then
+        if ! validate_commands "$tmp"; then
 
             rm -f "$tmp"
             return 1
@@ -1679,7 +2137,11 @@ validate_edited_templates() {
     done < <(
         jq -c '
             .[]
-            | select(.type == "template")
+            | select(
+                .type == "template"
+                or
+                .type == "project"
+            )
         ' "$file"
     )
 
@@ -1696,8 +2158,24 @@ validate_edit_file() {
     validate_edit_structure "$file" ||
         return 1
 
-    validate_edited_templates "$file" ||
+    validate_edited_commands "$file" ||
         return 1
+}
+
+require_valid_path() {
+
+    local path="$1"
+
+    validate_path "$path"
+
+    case $? in
+    0)
+        return 0
+        ;;
+    *)
+        return 1
+        ;;
+    esac
 }
 
 apply_edits() {
@@ -1751,15 +2229,16 @@ apply_edits() {
 
             local new_name
             local new_path
+            local new_flake
+            local new_prefix
             local new_session
 
             new_path="$(jq -r '.path' <<<"$item")"
+            new_flake="$(jq -r '.flake' <<<"$item")"
+            new_prefix="$(jq -c '.prefix' <<<"$item")"
 
-            [[ -d "$new_path" ]] || {
-                notify_error \
-                    "Path does not exist: $new_path"
+            require_valid_path "$new_path" ||
                 return 1
-            }
 
             if [[ "$new_path" != "$old_path" ]]; then
 
@@ -1802,6 +2281,8 @@ apply_edits() {
                 --arg old_session "$old_session" \
                 --arg new_name "$new_name" \
                 --arg new_path "$new_path" \
+                --arg new_flake "$new_flake" \
+                --argjson new_prefix "$new_prefix" \
                 --arg new_session "$new_session" \
                 '
                 .projects |= map(
@@ -1809,6 +2290,8 @@ apply_edits() {
                     then
                         .name = $new_name
                         | .path = $new_path
+                        | .flake = $new_flake
+                        | .prefix = $new_prefix
                         | .session = $new_session
                     else .
                     end
@@ -1860,20 +2343,19 @@ apply_edits() {
 
             local new_name
             local new_path
-            local new_startup
+            local new_flake
+            local new_prefix
             local new_windows
             local new_session
 
             new_name="$(jq -r '.name' <<<"$item")"
             new_path="$(jq -r '.path' <<<"$item")"
-            new_startup="$(jq -r '.startup' <<<"$item")"
+            new_flake="$(jq -r '.flake' <<<"$item")"
+            new_prefix="$(jq -c '.prefix' <<<"$item")"
             new_windows="$(jq -c '.windows' <<<"$item")"
 
-            [[ -d "$new_path" ]] || {
-                notify_error \
-                    "Path does not exist: $new_path"
+            require_valid_path "$new_path" ||
                 return 1
-            }
 
             new_session="$old_session"
 
@@ -1898,7 +2380,8 @@ apply_edits() {
                 --arg old_session "$old_session" \
                 --arg new_name "$new_name" \
                 --arg new_path "$new_path" \
-                --arg new_startup "$new_startup" \
+                --arg new_flake "$new_flake" \
+                --argjson new_prefix "$new_prefix" \
                 --arg new_session "$new_session" \
                 --argjson new_windows "$new_windows" \
                 '
@@ -1907,7 +2390,8 @@ apply_edits() {
                     then
                         .name = $new_name
                         | .path = $new_path
-                        | .startup = $new_startup
+                        | .flake = $new_flake
+                        | .prefix = $new_prefix
                         | .windows = $new_windows
                         | .session = $new_session
                     else .
@@ -1953,11 +2437,14 @@ cmd_edit() {
     local tmp
     tmp="$(mktemp)"
 
+    trap 'rm -f "$tmp"' RETURN
+
     build_edit_json "$tmp"
 
     local original_hash
     original_hash="$(
-        sha256sum "$tmp" | cut -d' ' -f1
+        sha256sum "$tmp" |
+            cut -d' ' -f1
     )"
 
     while :; do
@@ -1967,8 +2454,10 @@ cmd_edit() {
             -e nvim "$tmp"
 
         local new_hash
+
         new_hash="$(
-            sha256sum "$tmp" | cut -d' ' -f1
+            sha256sum "$tmp" |
+                cut -d' ' -f1
         )"
 
         #
@@ -1976,12 +2465,11 @@ cmd_edit() {
         #
         if [[ "$original_hash" == "$new_hash" ]]; then
 
-            rm -f "$tmp"
-
             notify_low \
                 "No changes detected"
 
             return 0
+
         fi
 
         if ! validate_edit_file "$tmp"; then
@@ -1992,13 +2480,15 @@ cmd_edit() {
                 printf "Edit Again\nCancel\n" |
                     rofi \
                         -dmenu \
-                        -p "Validation Failed"
+                        -p "Validation Failed" ||
+                    true
             )"
 
-            [[ "$action" == "Edit Again" ]] && continue
+            [[ "$action" == "Edit Again" ]] &&
+                continue
 
-            rm -f "$tmp"
             return 0
+
         fi
 
         break
@@ -2009,19 +2499,13 @@ cmd_edit() {
     # Pass original sessions so apply_edits()
     # does not trust _session from the edited JSON.
     #
-
-    if ! apply_edits \
+    apply_edits \
         "$tmp" \
-        "${entry_sessions[@]}"; then
-
-        rm -f "$tmp"
+        "${entry_sessions[@]}" ||
         return 1
-    fi
-    rm -f "$tmp"
 
     notify_info \
         "Updated selected entries"
-
 }
 
 ################################################################################
@@ -2159,47 +2643,6 @@ cmd_kill() {
 }
 
 ################################################################################
-# CREATE ALL
-################################################################################
-
-cmd_create_all() {
-
-    if ! rofi_confirm "Create up to ${MAX_CREATE_ALL} sessions?"; then
-        return 0
-    fi
-
-    local created=0
-
-    while IFS= read -r project; do
-
-        ((created >= MAX_CREATE_ALL)) && break
-
-        local session
-        local path
-
-        session="$(jq -r '.session' <<<"$project")"
-        path="$(jq -r '.path' <<<"$project")"
-
-        if tmux_session_exists "$session"; then
-            notify_low "Ignored existing session: $session"
-            continue
-        fi
-
-        create_session \
-            "$session" \
-            "$path" \
-            "exec zsh"
-
-        spawn_session_terminal "$session"
-
-        ((++created))
-
-    done < <(db_get_projects)
-
-    notify_info "Created $created session(s)"
-}
-
-################################################################################
 # KILL ALL
 ################################################################################
 
@@ -2320,6 +2763,88 @@ cmd_list() {
 }
 
 ################################################################################
+# FLAKE CACHE
+################################################################################
+
+cmd_add_flake_path() {
+
+    (($# > 0)) || {
+
+        notify_error \
+            "Usage: add-flake-path <path> [path ...]"
+
+        return 1
+    }
+
+    local path
+    local tmp
+    local added=0
+
+    for path in "$@"; do
+
+        [[ -d "$path" ]] || {
+
+            notify_error \
+                "Path does not exist: $path"
+
+            continue
+        }
+
+        [[ -f "$path/flake.nix" ]] || {
+
+            notify_error \
+                "No flake.nix found: $path"
+
+            continue
+        }
+
+        tmp="$(mktemp)"
+
+        jq \
+            --arg path "$path" '
+            .flakes.paths += [$path]
+            | .flakes.paths |= unique
+            ' \
+            "$PROJECT_DB" >"$tmp"
+
+        mv "$tmp" "$PROJECT_DB"
+
+        ((++added))
+
+    done
+
+    notify_info \
+        "Added $added flake path(s)"
+}
+
+cmd_list_flakes() {
+
+    local flakes
+
+    flakes="$(
+        db_get_cached_flakes
+    )"
+
+    [[ -n "$flakes" ]] || {
+
+        notify_low \
+            "No cached flakes"
+
+        return 0
+    }
+
+    printf '%s\n' "$flakes"
+}
+
+cmd_cache_flakes() {
+
+    cache_flakes
+
+    notify_info \
+        "Flake cache updated"
+}
+
+################################################################################
 # MAIN
 ################################################################################
 
@@ -2345,7 +2870,11 @@ main() {
     ########################################################################
 
     add)
-        cmd_add
+        cmd_add_entry "project"
+        ;;
+
+    add-template)
+        cmd_add_entry "template"
         ;;
 
     delete)
@@ -2360,28 +2889,12 @@ main() {
         cmd_session
         ;;
 
-    create-all)
-        cmd_create_all
-        ;;
-
-    add-template)
-        cmd_add_template
-        ;;
-
     kill)
         cmd_kill
         ;;
 
     kill-all)
         cmd_kill_all
-        ;;
-
-    ########################################################################
-    # Windows
-    ########################################################################
-
-    window)
-        cmd_window
         ;;
 
     ########################################################################
@@ -2418,6 +2931,22 @@ main() {
     ########################################################################
     list)
         cmd_list
+        ;;
+
+    ########################################################################
+    # Flake Cache
+    ########################################################################
+    add-flake-path)
+        shift
+        cmd_add_flake_path "$@"
+        ;;
+
+    cache-flakes)
+        cmd_cache_flakes
+        ;;
+
+    list-flakes)
+        cmd_list_flakes
         ;;
 
     ########################################################################
