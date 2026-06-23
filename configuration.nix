@@ -99,13 +99,13 @@
       #   theme = "sddm-astronaut-theme";
       # };
       ly = {
-          enable = true;
-	  settings = {
-	  animate = true;
-	  animation = "matrix";
-	  clock = "%c";
-	  hide_borders = true;
-	  };
+        enable = true;
+        settings = {
+          animate = true;
+          animation = "matrix";
+          clock = "%c";
+          hide_borders = true;
+        };
       };
     };
 
@@ -158,7 +158,7 @@
     isNormalUser = true;
     description = "nico";
     shell = pkgs.zsh;
-    extraGroups = ["networkmanager" "wheel"];
+    extraGroups = ["networkmanager" "wheel" "adbusers"];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -212,11 +212,14 @@
 
     python3
     nodejs
-    rustc
+    rustup
     cargo
     tree
     toipe
     pavucontrol
+
+    android-tools
+    jdk21
 
     adwaita-icon-theme
     gnome-themes-extra

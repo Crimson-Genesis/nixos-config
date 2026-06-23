@@ -28,6 +28,7 @@
     papirus-icon-theme
     qalculate-gtk
     thunderbird
+    android-studio
 
     tmux
 
