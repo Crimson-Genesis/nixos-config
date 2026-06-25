@@ -4,7 +4,7 @@
     contrastOpacity=188
     disabledTrayIcon=true
     saveAsFileExtension=jpeg
-    savePath=${config.home.homeDirectory}/Downloads
+    savePath=${config.home.homeDirectory}/Photos
     uiColor=#670086
   '';
 }

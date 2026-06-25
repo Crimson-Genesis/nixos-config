@@ -61,5 +61,14 @@
     inkscape-extensions.inkstitch
     inkscape-extensions.silhouette
     inkscape-extensions.applytransforms
+
+    # LaTeX editor / LSP
+    texlab
+    texlivePackages.chktex
+    texliveFull
+    pandoc
+    poppler-utils
+    python3Packages.python-pptx
+    tesseract
   ];
 }

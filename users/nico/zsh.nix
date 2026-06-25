@@ -131,7 +131,6 @@
       # LSD
       bindkey -s '^[a' "rofi-tmux add^M"
       bindkey -s '^[A' "rofi-tmux add-template^M"
-      bindkey -s '^[C' "rofi-tmux kill-all^M"
 
       # fzf
       bindkey -s '^[c' \

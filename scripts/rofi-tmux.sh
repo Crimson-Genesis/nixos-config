@@ -14,12 +14,16 @@ BACKUP_DIR="${DATA_DIR}/backups"
 
 ALACRITTY_CLASS_PREFIX="tmux"
 
+RUNTIME_DB="${XDG_RUNTIME_DIR:-/tmp}/rofi-tmux-apps.json"
+
 DEPENDENCIES=(
     jq
     tmux
     rofi
     uuidgen
     alacritty
+    systemd-run
+    systemctl
     notify-send
 )
 
@@ -282,6 +286,17 @@ EOF
     fi
 }
 
+ensure_runtime_db() {
+    local dir
+    dir="$(dirname "$RUNTIME_DB")"
+
+    mkdir -p "$dir"
+
+    if [[ ! -f "$RUNTIME_DB" ]]; then
+        printf '{}\n' >"$RUNTIME_DB"
+    fi
+}
+
 ################################################################################
 # Utility
 ################################################################################
@@ -373,6 +388,8 @@ cleanup_missing_paths() {
     # Kill any active tmux sessions first.
     #
     for session in "${missing_sessions[@]}"; do
+
+        kill_session_applications "$session"
 
         if tmux_session_exists "$session"; then
 
@@ -631,7 +648,8 @@ db_add_project() {
     local path="$2"
     local flake="$3"
     local prefix="$4"
-    local session="$5"
+    local applications="$5"
+    local session="$6"
 
     local tmp
     tmp=$(mktemp)
@@ -641,6 +659,7 @@ db_add_project() {
         --arg path "$path" \
         --arg flake "$flake" \
         --argjson prefix "$prefix" \
+        --argjson applications "$applications" \
         --arg session "$session" \
         '
         .projects += [{
@@ -648,12 +667,39 @@ db_add_project() {
             "path": $path,
             "flake": $flake,
             "prefix": $prefix,
+            "applications": $applications,
             "session": $session
         }]
         ' \
         "$PROJECT_DB" >"$tmp"
 
     mv "$tmp" "$PROJECT_DB"
+}
+
+db_get_project_applications_json() {
+    local session="$1"
+
+    jq -c \
+        --arg session "$session" \
+        '
+        .projects[]
+        | select(.session == $session)
+        | (.applications // [])
+        ' \
+        "$PROJECT_DB"
+}
+
+db_get_template_applications_json() {
+    local session="$1"
+
+    jq -c \
+        --arg session "$session" \
+        '
+        .templates[]
+        | select(.session == $session)
+        | (.applications // [])
+        ' \
+        "$PROJECT_DB"
 }
 
 db_remove_project_by_session() {
@@ -737,6 +783,73 @@ db_get_template_prefix() {
         "$PROJECT_DB"
 }
 
+sanitize_unit_component() {
+    local s="$1"
+
+    s="${s##*/}" # strip path
+    s="${s%% *}" # first token only
+    s="$(printf '%s' "$s" | tr '[:upper:]' '[:lower:]')"
+    s="$(printf '%s' "$s" | sed -E 's/[^a-z0-9_.-]+/-/g; s/^-+//; s/-+$//')"
+
+    [[ -n "$s" ]] || s="app"
+
+    printf '%s\n' "$s"
+}
+
+db_set_session_app_units() {
+    local session="$1"
+    local units_json="$2"
+
+    ensure_runtime_db
+
+    local tmp
+    tmp="$(mktemp)"
+
+    jq \
+        --arg session "$session" \
+        --argjson units "$units_json" \
+        '
+        .[$session] = $units
+        ' \
+        "$RUNTIME_DB" >"$tmp"
+
+    mv "$tmp" "$RUNTIME_DB"
+}
+
+db_get_session_app_units() {
+    local session="$1"
+
+    ensure_runtime_db
+
+    jq -r \
+        --arg session "$session" \
+        '
+        .[$session][]?.unit
+        ' \
+        "$RUNTIME_DB"
+}
+
+db_remove_session_app_units() {
+    local session="$1"
+
+    ensure_runtime_db
+
+    local tmp
+    tmp="$(mktemp)"
+
+    jq \
+        --arg session "$session" \
+        'del(.[$session])' \
+        "$RUNTIME_DB" >"$tmp"
+
+    mv "$tmp" "$RUNTIME_DB"
+}
+
+db_list_runtime_sessions() {
+    ensure_runtime_db
+    jq -r 'keys[]' "$RUNTIME_DB"
+}
+
 ################################################################################
 # Session Helpers
 ################################################################################
@@ -809,14 +922,186 @@ build_window_command() {
     printf '%s\n' "$full_cmd"
 }
 
+window_name_from_command() {
+    local cmd="$1"
+    local last
+    local first
+
+    #
+    # Empty / whitespace-only command -> shell
+    #
+    if [[ -z "${cmd//[[:space:]]/}" ]]; then
+        printf '%s\n' "shell"
+        return 0
+    fi
+
+    #
+    # Split on &&, ||, ;
+    #
+    last="$cmd"
+
+    while [[ "$last" =~ (.*)(&&|\|\||;)(.*) ]]; do
+        last="${BASH_REMATCH[3]}"
+    done
+
+    #
+    # Trim whitespace.
+    #
+    last="${last#"${last%%[![:space:]]*}"}"
+    last="${last%"${last##*[![:space:]]}"}"
+
+    [[ -n "$last" ]] || {
+        printf '%s\n' "shell"
+        return 0
+    }
+
+    #
+    # First word of last command segment.
+    #
+    first="${last%%[[:space:]]*}"
+
+    #
+    # Strip path if present.
+    #
+    first="${first##*/}"
+
+    [[ -n "$first" ]] || first="shell"
+
+    printf '%s\n' "$first"
+}
+
+launch_app_scope() {
+    local session="$1"
+    local path="$2"
+    local app="$3"
+    local index="$4"
+
+    local app_id
+    local unit
+
+    app_id="$(sanitize_unit_component "$app")"
+    unit="rofi-tmux-${session}-${app_id}-${index}.scope"
+
+    #
+    # Remove any stale old unit with the same name.
+    # Ignore failures.
+    #
+    systemctl --user stop "$unit" >/dev/null 2>&1 || true
+    systemctl --user reset-failed "$unit" >/dev/null 2>&1 || true
+
+    #
+    # Launch the application inside its own transient user scope.
+    #
+
+    systemd-run \
+        --user \
+        --scope \
+        --quiet \
+        --no-block \
+        --unit="$unit" \
+        bash -lc "cd $(printf '%q' "$path") && exec $app" \
+        </dev/null >/dev/null 2>&1 &
+
+    printf '%s\n' "$unit"
+}
+
+launch_session_applications() {
+    local session="$1"
+    local path="$2"
+    local applications_json="$3"
+
+    local applications=()
+    local entries=()
+    local app
+    local unit
+    local index=0
+
+    mapfile -t applications < <(
+        jq -r '.[]' <<<"$applications_json"
+    )
+
+    ((${#applications[@]} == 0)) && {
+        db_remove_session_app_units "$session"
+        return 0
+    }
+
+    for app in "${applications[@]}"; do
+        [[ -n "${app//[[:space:]]/}" ]] || continue
+
+        if unit="$(launch_app_scope "$session" "$path" "$app" "$index")"; then
+            entries+=(
+                "$(jq -nc \
+                    --arg app "$app" \
+                    --arg unit "$unit" \
+                    '{app:$app, unit:$unit}')"
+            )
+        else
+            notify_error "Failed to launch application in scope: $app"
+        fi
+
+        ((++index))
+    done
+
+    if ((${#entries[@]} == 0)); then
+        db_remove_session_app_units "$session"
+        return 0
+    fi
+
+    local units_json
+    units_json="$(
+        printf '%s\n' "${entries[@]}" | jq -s .
+    )"
+
+    local app_names
+    app_names="$(
+        printf '%s\n' "${entries[@]}" |
+            jq -r '.app' |
+            tr '\n' '\n'
+    )"
+
+    notify_low "Launched ${#entries[@]} application(s):
+$app_names"
+
+    db_set_session_app_units "$session" "$units_json"
+}
+
+kill_session_applications() {
+    local session="$1"
+    local unit
+    local units=()
+    local app_names=""
+    app_names="$(
+        ensure_runtime_db
+        jq -r \
+            --arg session "$session" \
+            '.[$session][]? | .app' \
+            "$RUNTIME_DB" |
+            paste -sd '\n'
+    )"
+    while IFS= read -r unit; do
+        [[ -n "$unit" ]] || continue
+        units+=("$unit")
+        systemctl --user stop "$unit" >/dev/null 2>&1 || true
+        systemctl --user reset-failed "$unit" >/dev/null 2>&1 || true
+    done < <(
+        db_get_session_app_units "$session"
+    )
+    db_remove_session_app_units "$session"
+    ((${#units[@]} == 0)) && return 0
+
+    notify_low "Killed ${#units[@]} application(s):
+$app_names"
+}
+
 create_session() {
 
     local session="$1"
     local path="$2"
     local flake="$3"
     local prefix_json="$4"
+    local applications_json="$5"
 
-    shift 4
+    shift 5
 
     local window_commands=("$@")
 
@@ -914,8 +1199,13 @@ nix develop '$flake' -c zsh" \
 
         local index=0
         local window_cmd
+        local window_name
 
         for window_cmd in "${window_commands[@]}"; do
+
+            window_name="$(
+                window_name_from_command "$window_cmd"
+            )"
 
             if ((index == 0)); then
 
@@ -926,6 +1216,10 @@ nix develop '$flake' -c zsh" \
                         head -n1
                 )"
 
+                tmux rename-window \
+                    -t "$window_id" \
+                    "$window_name"
+
             else
 
                 window_id="$(
@@ -934,7 +1228,7 @@ nix develop '$flake' -c zsh" \
                         -P \
                         -F '#{window_id}' \
                         -t "$session" \
-                        -n "$index" \
+                        -n "$window_name" \
                         -c "$path"
                 )"
 
@@ -951,7 +1245,7 @@ nix develop '$flake' -c zsh" \
                 tmux send-keys \
                     -t "$window_id" \
                     "export ROFI_TMUX_CMD=$(printf '%q' "$cmd")
-                    nix develop '$flake' -c zsh" \
+nix develop '$flake' -c zsh" \
                     C-m
 
             else
@@ -969,6 +1263,11 @@ nix develop '$flake' -c zsh" \
         done
 
     fi
+
+    launch_session_applications \
+        "$session" \
+        "$path" \
+        "$applications_json"
 
     notify_low \
         "Created session: $session"
@@ -1200,6 +1499,30 @@ validate_commands() {
     ' "$file"
     )
 
+    #
+    # Validate application commands.
+    #
+
+    while IFS= read -r cmd; do
+
+        if [[ -z "${cmd//[[:space:]]/}" ]]; then
+            continue
+        fi
+
+        if ! command -v "${cmd%% *}" >/dev/null 2>&1; then
+
+            notify_error \
+                "Invalid application command: $cmd"
+
+            return 1
+        fi
+
+    done < <(
+        jq -r '
+        .applications[]?
+    ' "$file"
+    )
+
     return 0
 }
 
@@ -1294,7 +1617,8 @@ cmd_add_entry() {
 {
     "path": "$path",
     "flake": "$flakes",
-    "prefix": []
+    "prefix": [],
+    "applications": []
 }
 EOF
 
@@ -1309,7 +1633,8 @@ EOF
     "windows": [
         "nvim",
         "btop"
-    ]
+    ],
+    "applications": []
 }
 EOF
 
@@ -1365,6 +1690,19 @@ EOF
                     all(
                         .prefix[];
                         type == "string"
+                    )
+                )
+
+                and
+
+                (.applications | type == "array")
+
+                and
+
+                (
+                    all(
+                        .applications[];
+                        type == "string" and test("\\S")
                     )
                 )
             ' "$tmp" >/dev/null 2>&1; then
@@ -1437,6 +1775,19 @@ EOF
                     all(
                         .windows[];
                         type == "string"
+                    )
+                )
+
+                and
+
+                (.applications | type == "array")
+
+                and
+
+                (
+                    all(
+                        .applications[];
+                        type == "string" and test("\\S")
                     )
                 )
             ' "$tmp" >/dev/null 2>&1; then
@@ -1520,9 +1871,11 @@ EOF
 
         local flake
         local prefix
+        local applications
 
         flake="$(jq -r '.flake' "$tmp")"
         prefix="$(jq -c '.prefix' "$tmp")"
+        applications="$(jq -c '.applications' "$tmp")"
 
         session="$(
             generate_session_name "$path"
@@ -1535,6 +1888,7 @@ EOF
             "$path" \
             "$flake" \
             "$prefix" \
+            "$applications" \
             "$session"
 
         rm -f "$tmp"
@@ -1583,197 +1937,68 @@ EOF
 ################################################################################
 # SESSION
 ################################################################################
+create_entry_session() {
+    local session="$1"
+    local type="$2"
+    local path flake prefix applications_json
+    local windows=()
+
+    if [[ "$type" == "[T]" ]]; then
+        path="$(db_get_template_path "$session")"
+        flake="$(db_get_template_flake "$session")"
+        prefix="$(db_get_template_prefix "$session")"
+        applications_json="$(db_get_template_applications_json "$session")"
+        mapfile -t windows < <(db_get_template_windows "$session")
+    else
+        path="$(db_get_path_from_session "$session")"
+        flake="$(db_get_project_flake "$session")"
+        prefix="$(db_get_project_prefix "$session")"
+        applications_json="$(db_get_project_applications_json "$session")"
+        [[ -n "$path" ]] || return 1
+    fi
+
+    tmux_session_exists "$session" && return 0
+
+    create_session \
+        "$session" \
+        "$path" \
+        "$flake" \
+        "$prefix" \
+        "$applications_json" \
+        "${windows[@]+"${windows[@]}"}"
+}
+
 cmd_session() {
-
     local selections
-
-    selections="$(
-        rofi_pro_temp_selector \
-            "Tmux Session"
-    )"
-
+    selections="$(rofi_pro_temp_selector "Tmux Session")"
     [[ -n "$selections" ]] || return 0
-
     mapfile -t entries <<<"$selections"
-
     normalize_entries
 
-    #
-    # Single selection
-    #
     if [[ ${#entry_sessions[@]} -eq 1 ]]; then
-
-        local session
-        local type
-
-        session="${entry_sessions[0]}"
-        type="${entry_types[0]}"
-
-        if [[ "$type" == "[T]" ]]; then
-
-            local path
-            local flake
-            local prefix
-
-            path="$(
-                db_get_template_path "$session"
-            )"
-
-            flake="$(
-                db_get_template_flake "$session"
-            )"
-
-            prefix="$(
-                db_get_template_prefix "$session"
-            )"
-
-            mapfile -t windows < <(
-                db_get_template_windows "$session"
-            )
-
-            if ! tmux_session_exists "$session"; then
-
-                create_session \
-                    "$session" \
-                    "$path" \
-                    "$flake" \
-                    "$prefix" \
-                    "${windows[@]}"
-
-            fi
-
-        else
-
-            local path
-            local flake
-            local prefix
-
-            path="$(
-                db_get_path_from_session "$session"
-            )"
-
-            flake="$(
-                db_get_project_flake "$session"
-            )"
-
-            prefix="$(
-                db_get_project_prefix "$session"
-            )"
-
-            [[ -n "$path" ]] || return 1
-
-            if ! tmux_session_exists "$session"; then
-
-                create_session \
-                    "$session" \
-                    "$path" \
-                    "$flake" \
-                    "$prefix"
-            fi
-
-        fi
-
-        attach_or_switch_session \
-            "$session"
-
-        return 0
-
-    fi
-
-    #
-    # Multi selection
-    #
-    if ! rofi_confirm \
-        "Create Sessions?"; then
+        local session="${entry_sessions[0]}"
+        local type="${entry_types[0]}"
+        create_entry_session "$session" "$type" || return 1
+        attach_or_switch_session "$session"
         return 0
     fi
+
+    rofi_confirm "Create Sessions?" || return 0
 
     local created=0
     local i
-
     for i in "${!entry_sessions[@]}"; do
-
-        local session
-        local type
-
-        session="${entry_sessions[$i]}"
-        type="${entry_types[$i]}"
-
+        local session="${entry_sessions[$i]}"
+        local type="${entry_types[$i]}"
         if tmux_session_exists "$session"; then
-
-            notify_low \
-                "Ignored existing session: $session"
-
+            notify_low "Ignored existing session: $session"
             continue
-
         fi
-
-        if [[ "$type" == "[T]" ]]; then
-
-            local path
-            local flake
-            local prefix
-
-            path="$(
-                db_get_template_path "$session"
-            )"
-
-            flake="$(
-                db_get_template_flake "$session"
-            )"
-
-            prefix="$(
-                db_get_template_prefix "$session"
-            )"
-
-            mapfile -t windows < <(
-                db_get_template_windows "$session"
-            )
-
-            create_session \
-                "$session" \
-                "$path" \
-                "$flake" \
-                "$prefix" \
-                "${windows[@]}"
-
-        else
-
-            local path
-            local flake
-            local prefix
-
-            path="$(
-                db_get_path_from_session "$session"
-            )"
-
-            flake="$(
-                db_get_project_flake "$session"
-            )"
-
-            prefix="$(
-                db_get_project_prefix "$session"
-            )"
-
-            [[ -n "$path" ]] || continue
-
-            create_session \
-                "$session" \
-                "$path" \
-                "$flake" \
-                "$prefix"
-
-        fi
-
-        spawn_session_terminal \
-            "$session"
-
+        create_entry_session "$session" "$type" || continue
+        spawn_session_terminal "$session"
         ((++created))
-
     done
-
-    notify_info \
-        "Created $created session(s)"
+    notify_info "Created $created session(s)"
 }
 
 ################################################################################
@@ -2017,7 +2242,8 @@ build_edit_json() {
                         _name: .name,
                         path,
                         flake,
-                        prefix
+                        prefix,
+                        applications
                     }
                     ' \
                     "$PROJECT_DB"
@@ -2038,7 +2264,8 @@ build_edit_json() {
                         path,
                         flake,
                         prefix,
-                        windows
+                        windows,
+                        applications
                     }
                     ' \
                     "$PROJECT_DB"
@@ -2092,6 +2319,19 @@ validate_edit_structure() {
                     all(
                         .prefix[];
                         type == "string"
+                    )
+                )
+
+                and
+
+                (.applications | type == "array")
+
+                and
+
+                (
+                    all(
+                        .applications[];
+                        type == "string"  and test("\\S")
                     )
                 )
             )
@@ -2152,6 +2392,19 @@ validate_edit_structure() {
                         type == "string"
                     )
                 )
+
+                and
+
+                (.applications | type == "array")
+
+                and
+
+                (
+                    all(
+                        .applications[];
+                        type == "string" and test("\\S")
+                    )
+                )
             )
         )
     ' "$file" >/dev/null 2>&1
@@ -2207,22 +2460,6 @@ validate_edit_file() {
         return 1
 }
 
-require_valid_path() {
-
-    local path="$1"
-
-    validate_path "$path"
-
-    case $? in
-    0)
-        return 0
-        ;;
-    *)
-        return 1
-        ;;
-    esac
-}
-
 apply_edits() {
 
     local edited_file="$1"
@@ -2276,14 +2513,15 @@ apply_edits() {
             local new_path
             local new_flake
             local new_prefix
+            local new_applications
             local new_session
 
             new_path="$(jq -r '.path' <<<"$item")"
             new_flake="$(jq -r '.flake' <<<"$item")"
             new_prefix="$(jq -c '.prefix' <<<"$item")"
+            new_applications="$(jq -c '.applications' <<<"$item")"
 
-            require_valid_path "$new_path" ||
-                return 1
+            validate_path "$new_path" || return 1
 
             if [[ "$new_path" != "$old_path" ]]; then
 
@@ -2313,6 +2551,7 @@ apply_edits() {
                 new_session="$(
                     generate_session_name "$new_path"
                 )"
+                kill_session_applications "$old_session"
 
                 if tmux_session_exists "$old_session"; then
                     tmux kill-session \
@@ -2328,6 +2567,7 @@ apply_edits() {
                 --arg new_path "$new_path" \
                 --arg new_flake "$new_flake" \
                 --argjson new_prefix "$new_prefix" \
+                --argjson new_applications "$new_applications" \
                 --arg new_session "$new_session" \
                 '
                 .projects |= map(
@@ -2337,6 +2577,7 @@ apply_edits() {
                         | .path = $new_path
                         | .flake = $new_flake
                         | .prefix = $new_prefix
+                        | .applications = $new_applications
                         | .session = $new_session
                     else .
                     end
@@ -2391,16 +2632,17 @@ apply_edits() {
             local new_flake
             local new_prefix
             local new_windows
+            local new_applications
             local new_session
 
             new_name="$(jq -r '.name' <<<"$item")"
             new_path="$(jq -r '.path' <<<"$item")"
             new_flake="$(jq -r '.flake' <<<"$item")"
             new_prefix="$(jq -c '.prefix' <<<"$item")"
+            new_applications="$(jq -c '.applications' <<<"$item")"
             new_windows="$(jq -c '.windows' <<<"$item")"
 
-            require_valid_path "$new_path" ||
-                return 1
+            validate_path "$new_path" || return 1
 
             new_session="$old_session"
 
@@ -2412,6 +2654,8 @@ apply_edits() {
                         "$new_path" \
                         "$new_name"
                 )"
+
+                kill_session_applications "$old_session"
 
                 if tmux_session_exists "$old_session"; then
                     tmux kill-session \
@@ -2428,6 +2672,7 @@ apply_edits() {
                 --arg new_flake "$new_flake" \
                 --argjson new_prefix "$new_prefix" \
                 --arg new_session "$new_session" \
+                --argjson new_applications "$new_applications" \
                 --argjson new_windows "$new_windows" \
                 '
                 .templates |= map(
@@ -2438,6 +2683,7 @@ apply_edits() {
                         | .flake = $new_flake
                         | .prefix = $new_prefix
                         | .windows = $new_windows
+                        | .applications = $new_applications
                         | .session = $new_session
                     else .
                     end
@@ -2590,8 +2836,15 @@ cmd_delete() {
         session="${entry_sessions[$i]}"
         type="${entry_types[$i]}"
 
-        if tmux_session_exists "$session"; then
+        local had_tmux=0
 
+        if tmux_session_exists "$session"; then
+            had_tmux=1
+        fi
+
+        kill_session_applications "$session"
+
+        if ((had_tmux)); then
             tmux kill-session \
                 -t "$session" \
                 2>/dev/null || true
@@ -2661,30 +2914,50 @@ cmd_kill() {
     fi
 
     local killed=0
+    local cleaned_only=0
     local session
 
     for session in "${entry_sessions[@]}"; do
 
-        if ! tmux_session_exists "$session"; then
+        local had_tmux=0
 
-            notify_low \
-                "Ignored inactive session: $session"
-
-            continue
+        if tmux_session_exists "$session"; then
+            had_tmux=1
         fi
 
-        tmux kill-session \
-            -t "$session"
+        kill_session_applications "$session"
 
-        notify_low \
-            "Killed: $session"
+        if ((had_tmux)); then
+            tmux kill-session \
+                -t "$session" \
+                2>/dev/null || true
 
-        ((++killed))
+            notify_low \
+                "Killed: $session"
+
+            ((++killed))
+        else
+            notify_low \
+                "Cleaned app state for inactive session: $session"
+
+            ((++cleaned_only))
+        fi
 
     done
 
-    notify_info \
-        "Killed $killed session(s)"
+    if ((killed > 0 && cleaned_only > 0)); then
+        notify_info \
+            "Killed $killed session(s), cleaned $cleaned_only inactive session app state(s)"
+    elif ((killed > 0)); then
+        notify_info \
+            "Killed $killed session(s)"
+    elif ((cleaned_only > 0)); then
+        notify_info \
+            "Cleaned $cleaned_only inactive session app state(s)"
+    else
+        notify_low \
+            "Nothing to kill"
+    fi
 }
 
 ################################################################################
@@ -2692,18 +2965,28 @@ cmd_kill() {
 ################################################################################
 
 cmd_kill_all() {
+    local active_sessions=()
+    local runtime_sessions=()
+    local session
 
-    local active
-
-    active="$(
+    while IFS= read -r session; do
+        [[ -n "$session" ]] || continue
+        session="${session%%:*}"
+        active_sessions+=("$session")
+    done < <(
         tmux list-sessions 2>/dev/null || true
-    )"
+    )
 
-    if [[ -z "$active" ]]; then
+    while IFS= read -r session; do
+        [[ -n "$session" ]] || continue
+        runtime_sessions+=("$session")
+    done < <(
+        db_list_runtime_sessions
+    )
 
+    if ((${#active_sessions[@]} == 0 && ${#runtime_sessions[@]} == 0)); then
         notify_low \
-            "No active tmux sessions"
-
+            "No active tmux sessions or tracked applications"
         return 0
     fi
 
@@ -2711,36 +2994,38 @@ cmd_kill_all() {
         return 0
     fi
 
-    local count
-
-    count="$(
-        tmux list-sessions 2>/dev/null |
-            wc -l
-    )"
+    local cleaned_apps=0
+    local killed_tmux=0
 
     #
-    # Kill everything.
+    # First clean all tracked applications,
+    # including stale sessions with no tmux session.
     #
-    # We intentionally do NOT preserve the
-    # current session because this command
-    # mirrors your original killall behavior.
+    for session in "${runtime_sessions[@]}"; do
+        kill_session_applications "$session"
+        ((++cleaned_apps))
+    done
+
     #
-
-    while IFS= read -r session; do
-
-        session="$(
-            cut -d: -f1 <<<"$session"
-        )"
-
+    # Then kill active tmux sessions.
+    #
+    for session in "${active_sessions[@]}"; do
         tmux kill-session \
-            -t "$session"
+            -t "$session" \
+            2>/dev/null || true
+        ((++killed_tmux))
+    done
 
-    done < <(
-        tmux list-sessions 2>/dev/null
-    )
-
-    notify_info \
-        "Killed $count session(s)"
+    if ((killed_tmux > 0 && cleaned_apps > 0)); then
+        notify_info \
+            "Killed $killed_tmux tmux session(s) and cleaned $cleaned_apps tracked application group(s)"
+    elif ((killed_tmux > 0)); then
+        notify_info \
+            "Killed $killed_tmux tmux session(s)"
+    else
+        notify_info \
+            "Cleaned $cleaned_apps tracked application group(s)"
+    fi
 }
 
 ################################################################################

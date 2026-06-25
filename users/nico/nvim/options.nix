@@ -54,139 +54,139 @@
     };
 
     luaConfigRC.options = ''
-                      vim.g.mapleader = " "
+              vim.g.mapleader = " "
 
-                      vim.g.loaded_netrw = 1
-                      vim.g.loaded_netrwPlugin = 1
+              vim.g.loaded_netrw = 1
+              vim.g.loaded_netrwPlugin = 1
 
-                      vim.opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
+              vim.opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
 
-                      vim.opt.cursorlineopt = "number"
+              vim.opt.cursorlineopt = "number"
 
-                      vim.opt.isfname:append("@-@")
+              vim.opt.isfname:append("@-@")
 
-                      vim.g.mkdp_auto_close = 0
+              vim.g.mkdp_auto_close = 0
 
-                      vim.g.lazydev_enabled = true
+              vim.g.lazydev_enabled = true
 
-                      vim.opt.listchars = {
-                         trail = "·",
-                         nbsp = "␣"
-                      }
+              vim.opt.listchars = {
+                 trail = "·",
+                 nbsp = "␣"
+              }
 
-                      vim.opt.breakindent = true
+              vim.opt.breakindent = true
 
-                      vim.o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
+              vim.o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"
 
-                      function ColorMe()
-                          vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-                          vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-                      end
+              function ColorMe()
+                  vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+                  vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+              end
 
-                      ColorMe()
+              ColorMe()
 
-                      vim.cmd([[
-                        highlight StatusLine guibg=#000000 guifg=#d5d6db
-                      ]])
+              vim.cmd([[
+                highlight StatusLine guibg=#000000 guifg=#d5d6db
+              ]])
 
-                      vim.cmd([[
-                        highlight StatusLineNC ctermfg=gray ctermbg=black guifg=#888888 guibg=#000000
-                      ]])
+              vim.cmd([[
+                highlight StatusLineNC ctermfg=gray ctermbg=black guifg=#888888 guibg=#000000
+              ]])
 
-                      local oil = require("oil")
-                      vim.keymap.set("n", "<leader>pv", oil.toggle_float, { desc = "Open parent directory", noremap = true, silent = true })
+              local oil = require("oil")
+              vim.keymap.set("n", "<leader>pv", oil.toggle_float, { desc = "Open parent directory", noremap = true, silent = true })
 
-                        local telescope = require("telescope")
-                  local actions = require("telescope.actions")
-                  local action_state = require("telescope.actions.state")
+                local telescope = require("telescope")
+          local actions = require("telescope.actions")
+          local action_state = require("telescope.actions.state")
 
-                  local open_help_in_vertical_split = function(prompt_bufnr)
-                      local selection = action_state.get_selected_entry()
-                      actions.close(prompt_bufnr)
+          local open_help_in_vertical_split = function(prompt_bufnr)
+              local selection = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
 
-                      if selection and selection.value then
-                          vim.cmd("vert help " .. selection.value)
-                      end
-                  end
+              if selection and selection.value then
+                  vim.cmd("vert help " .. selection.value)
+              end
+          end
 
-                  local open_man_pages_in_vertical_split = function(prompt_bufnr)
-                      local selection = action_state.get_selected_entry()
-                      actions.close(prompt_bufnr)
+          local open_man_pages_in_vertical_split = function(prompt_bufnr)
+              local selection = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
 
-                      if selection and selection.value then
-                          vim.cmd("vert Man " .. selection.value)
-                      end
-                  end
+              if selection and selection.value then
+                  vim.cmd("vert Man " .. selection.value)
+              end
+          end
 
-                  telescope.setup({
-                      defaults = {
-                          sorting_strategy = "descending",
+          telescope.setup({
+              defaults = {
+                  sorting_strategy = "descending",
 
-                          layout_config = {
-                            horizontal = {
-                            prompt_position = "bottom",
-                            },
-                          },
+                  layout_config = {
+                    horizontal = {
+                    prompt_position = "bottom",
+                    },
+                  },
 
-                          mappings = {
-                              i = {
-                                  ["<M-j>"] = actions.move_selection_next,
-                                  ["<M-k>"] = actions.move_selection_previous,
-                                  ["<C-q>"] = actions.smart_send_to_qflist,
-                                  ["<C-Q>"] = actions.smart_add_to_qflist,
+                  mappings = {
+                      i = {
+                          ["<M-j>"] = actions.move_selection_next,
+                          ["<M-k>"] = actions.move_selection_previous,
+                          ["<C-q>"] = actions.smart_send_to_qflist,
+                          ["<C-Q>"] = actions.smart_add_to_qflist,
 
-                                  ["<C-s>"] = function(prompt_bufnr)
-                                      local selection = action_state.get_selected_entry()
-                                      if selection and selection.path then
-                                          vim.fn.system("nsxiv " .. selection.path)
-                                      end
-                                  end,
+                          ["<C-s>"] = function(prompt_bufnr)
+                              local selection = action_state.get_selected_entry()
+                              if selection and selection.path then
+                                  vim.fn.system("nsxiv " .. selection.path)
+                              end
+                          end,
 
-                                  ["<M-CR>"] = actions.file_vsplit,
-                              },
-
-                              n = {
-                                  ["<M-j>"] = actions.move_selection_next,
-                                  ["<M-k>"] = actions.move_selection_previous,
-                                  ["<C-q>"] = actions.smart_send_to_qflist,
-                                  ["<C-Q>"] = actions.smart_add_to_qflist,
-
-                                  ["<C-s>"] = function(prompt_bufnr)
-                                      local selection = action_state.get_selected_entry()
-                                      if selection and selection.path then
-                                          vim.fn.system("nsxiv " .. selection.path)
-                                      end
-                                  end,
-
-                                  ["<M-CR>"] = actions.file_vsplit,
-                              },
-                          },
+                          ["<M-CR>"] = actions.file_vsplit,
                       },
 
-                      pickers = {
-                          help_tags = {
-                              mappings = {
-                                  i = {
-                                      ["<CR>"] = open_help_in_vertical_split,
-                                  },
-                                  n = {
-                                      ["<CR>"] = open_help_in_vertical_split,
-                                  },
-                              },
-                          },
+                      n = {
+                          ["<M-j>"] = actions.move_selection_next,
+                          ["<M-k>"] = actions.move_selection_previous,
+                          ["<C-q>"] = actions.smart_send_to_qflist,
+                          ["<C-Q>"] = actions.smart_add_to_qflist,
 
-                          man_pages = {
-                              mappings = {
-                                  i = {
-                                      ["<CR>"] = open_man_pages_in_vertical_split,
-                                  },
-                                  n = {
-                                      ["<CR>"] = open_man_pages_in_vertical_split,
-                                  },
-                              },
+                          ["<C-s>"] = function(prompt_bufnr)
+                              local selection = action_state.get_selected_entry()
+                              if selection and selection.path then
+                                  vim.fn.system("nsxiv " .. selection.path)
+                              end
+                          end,
+
+                          ["<M-CR>"] = actions.file_vsplit,
+                      },
+                  },
+              },
+
+              pickers = {
+                  help_tags = {
+                      mappings = {
+                          i = {
+                              ["<CR>"] = open_help_in_vertical_split,
+                          },
+                          n = {
+                              ["<CR>"] = open_help_in_vertical_split,
                           },
                       },
-                  })
+                  },
+
+                  man_pages = {
+                      mappings = {
+                          i = {
+                              ["<CR>"] = open_man_pages_in_vertical_split,
+                          },
+                          n = {
+                              ["<CR>"] = open_man_pages_in_vertical_split,
+                          },
+                      },
+                  },
+              },
+          })
 
 
       vim.api.nvim_create_autocmd("TextYankPost", {
@@ -339,6 +339,9 @@
                 border = "rounded",
             },
         })
+        vim.g.vimtex_view_method = "zathura"
+        vim.g.vimtex_compiler_method = "latexmk"
+        vim.g.vimtex_quickfix_mode = 0
     '';
   };
 }

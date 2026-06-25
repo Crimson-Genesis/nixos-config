@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import Data.Maybe (isJust)
 import Graphics.X11.ExtraTypes.XF86
 import System.IO (hClose, hPutStr)
+import System.Process (spawnCommand)
 import XMonad
 import XMonad.Actions.CopyWindow (kill1)
 import XMonad.Actions.CycleWS (WSType (WSIs), nextScreen, prevScreen)
@@ -192,7 +193,8 @@ myWorkspaceRules =
   [ className =? "Alacritty" --> doShiftAndView " dev ",
     className =? "zen" --> doShiftAndView " www ",
     className =? "doublecmd" --> doShiftAndView " sys ",
-    className =? "mpv" --> doShiftAndView " vid ",
+    className =? "Thunar" --> doShiftAndView " sys ",
+    (className =? "mpv" <&&> (not <$> (resource =? "wallpaper"))) --> doShiftAndView " vid ",
     className =? "rnote" --> doShiftAndView " pen ",
     className =? "Inkscape" --> doShiftAndView " pen ",
     className =? "qBittorrent" --> doShiftAndView " qbit ",
@@ -206,8 +208,13 @@ myWorkspaceRules =
     className =? "libreoffice-impress" --> doShiftAndView " mus ",
     className =? "Soffice" --> doShiftAndView " mus ",
     className =? "resolve" --> doShiftAndView " studio ",
+    className =? "Antigravity" --> doShiftAndView " studio ",
+    className =? "Antigravity IDE" --> doShiftAndView " studio ",
     className =? "obs" --> doShiftAndView " studio "
   ]
+
+myWallpaperRules =
+  [resource =? "wallpaper" --> doIgnore]
 
 myFullscreenRules =
   [isFullscreen --> doFullFloat]
@@ -215,6 +222,7 @@ myFullscreenRules =
 myManageHook :: ManageHook
 myManageHook =
   insertPosition End Newer
+    <+> composeAll myWallpaperRules
     <+> composeAll myFloatRules
     <+> composeAll myWorkspaceRules
     <+> composeAll myFullscreenRules
@@ -270,10 +278,9 @@ myKeys c =
         ^++^ subKeys
           "Rofi Tmux"
           [ ("M1-; s", addName "Launch rofi-tmux session" $ spawn "rofi-tmux session"),
-            ("M1-; a", addName "Launch rofi-tmux create-all" $ spawn "rofi-tmux create-all"),
             ("M1-; w", addName "Launch rofi-tmux window" $ spawn "rofi-tmux window"),
             ("M1-; k", addName "Launch rofi-tmux kill" $ spawn "rofi-tmux kill"),
-            ("M1-; S-k", addName "Launch rofi-tmux kill-all" $ spawn "rofi-tmux kill-all"),
+            ("M1-S-c", addName "Launch rofi-tmux kill-all" $ spawn "rofi-tmux kill-all"),
             ("M1-; d", addName "Launch rofi-tmux delete" $ spawn "rofi-tmux delete"),
             ("M1-; c", addName "Launch rofi-tmux cleanup" $ spawn "rofi-tmux cleanup"),
             ("M1-; b", addName "Launch rofi-tmux backup" $ spawn "rofi-tmux backup"),
@@ -293,9 +300,15 @@ myKeys c =
             -- ("M-<F9>", addName "" $ spawn ()),
             ("M-<F10>", addName "Color Picker - xcolor" $ spawn "xcolor -c 'rgb(%{r},%{g},%{b}) #%{02Hr}%{02Hg}%{02Hb}' -S 10 -s clipboard"),
             ("M-S-<F10>", addName "Color Picker - gpick" $ spawn "pgrep -af gcolor3 >/dev/null && pkill gcolor3 || gcolor3"),
-            ("M-<F11>", addName "Email client" $ runOrRaise "thunderbird" (resource =? "thunderbird")),
-            ("M-S-<F11>", addName "Email client" $ runOrRaise "thunderbird" (resource =? "thunderbird"))
+            ("M-<F11>", addName "Email client" $ runOrRaise "thunderbird" (resource =? "thunderbird"))
             -- ("M-<F12>", addName "" $ spawn )
+          ]
+        ^++^ subKeys
+          "Switch wallpapers"
+          [ ("M1-0", addName "Random static-wallpaper" $ spawn "rofi-wallpaper static random"),
+            ("M1-S-0", addName "Random video-wallpaper" $ spawn "rofi-wallpaper toggle-video-random"),
+            ("M1-C-0", addName "Static-Wallpaper Picker" $ spawn "rofi-wallpaper static pick"),
+            ("M1-S-C-0", addName "Video-Wallpaper Picker" $ spawn "rofi-wallpaper video pick")
           ]
         ^++^ subKeys
           "Switch to workspace"
@@ -457,11 +470,11 @@ myMouseBindings conf =
 
 myStartupHook :: X ()
 myStartupHook = do
+  spawnOnce "rofi-wallpaper static random"
   spawnOnce "xsetroot -cursor_name left_ptr"
   spawnOnce "greenclip daemon"
   spawnOnce "picom"
   spawnOnce "xset r rate 125 120"
-  spawnOnce "feh --bg-fill $HOME/.config/xmonad/wallpaper.jpg"
   spawnOnce "dunst"
   spawnOnce myTerminal
 

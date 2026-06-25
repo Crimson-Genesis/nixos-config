@@ -173,10 +173,11 @@
   };
 
   environment.systemPackages = with pkgs; [
+    cmatrix
+    xwinwrap
     feh
     file
     binutils
-    mpvpaper
     hsetroot
     # kdePackages.sddm
     # sddm-astronaut
@@ -201,6 +202,7 @@
     steam-run
     nvtopPackages.nvidia
     neovim
+    mpvpaper
     yad
 
     lua-language-server
@@ -260,6 +262,7 @@
     (writeShellScriptBin "vol_brigh_control" (builtins.readFile ./scripts/vol_brigh_control.sh))
     (writeShellScriptBin "rofi-search" (builtins.readFile ./scripts/rofi-search.sh))
     (writeShellScriptBin "rofi-tmux" (builtins.readFile ./scripts/rofi-tmux.sh))
+    (writeShellScriptBin "rofi-wallpaper" (builtins.readFile ./scripts/rofi-wallpaper.sh))
   ];
 
   qt = {

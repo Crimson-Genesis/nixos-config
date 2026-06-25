@@ -164,6 +164,11 @@
         enable = true;
         lsp.enable = true;
       };
+      tex = {
+        enable = true;
+        lsp.enable = true;
+        format.enable = true;
+      };
     };
   };
 }

@@ -14,7 +14,6 @@
     ./rofi/config.nix
     ./dunst.nix
     ./xmonad/config.nix
-    ./btop/config.nix
     ./flameshot.nix
     ./htop.nix
     ./mpv/config.nix

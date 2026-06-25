@@ -78,6 +78,10 @@
         trouble = {
           package = pkgs.vimPlugins.trouble-nvim;
         };
+
+        vimtex = {
+          package = pkgs.vimPlugins.vimtex;
+        };
       };
     };
   };
