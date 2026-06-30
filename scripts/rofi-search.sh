@@ -174,7 +174,7 @@ query=$(
             -i \
             -matching fuzzy \
             -sort \
-            -p "󰍉 Search"
+            -p "󰍉 Search:"
 )
 
 query="$(printf '%s' "$query" | xargs)"

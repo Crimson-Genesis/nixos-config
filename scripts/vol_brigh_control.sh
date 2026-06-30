@@ -189,7 +189,7 @@ vol)
             exit 1
         }
 
-        setvol=$(rofi -dmenu -p "󰕾 Volume (0-100)")
+        setvol=$(rofi -dmenu -p "󰕾 Volume (0-100):")
     else
         setvol="$2"
     fi
@@ -247,7 +247,7 @@ bright)
             exit 1
         }
 
-        setbright=$(rofi -dmenu -p "󰃠 Brightness (0-100)")
+        setbright=$(rofi -dmenu -p "󰃠 Brightness (0-100):")
     else
         setbright="$2"
     fi

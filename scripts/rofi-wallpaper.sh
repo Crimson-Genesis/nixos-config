@@ -299,7 +299,7 @@ static:random)
 
 static:pick)
     have rofi || die "rofi is required"
-    file="$(pick_file "Static wallpaper" "$STATIC_DIR" "${STATIC_EXTS[@]}")"
+    file="$(pick_file "Static-wallpaper:" "$STATIC_DIR" "${STATIC_EXTS[@]}")"
     [[ -n "${file:-}" ]] || exit 0
     set_static "$file"
     ;;
@@ -311,7 +311,7 @@ video:random)
 
 video:pick)
     have rofi || die "rofi is required"
-    file="$(pick_file "Video wallpaper" "$VIDEO_DIR" "${VIDEO_EXTS[@]}")"
+    file="$(pick_file "Video-wallpaper:" "$VIDEO_DIR" "${VIDEO_EXTS[@]}")"
     [[ -n "${file:-}" ]] || exit 0
     set_video "$file"
     ;;

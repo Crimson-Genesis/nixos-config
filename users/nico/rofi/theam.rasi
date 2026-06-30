@@ -44,14 +44,25 @@ window {
 
 mainbox {
     background-color : transparent;
+    children: [ inputbar, message, listview ];
+}
+
+message {
+    padding: 6px 10px;
 }
 
 inputbar {
-    children : [ entry ];
+    children : [ prompt, entry ];
 
-    padding : 6px 10px;
+    padding : 6px 3px;
+    spacing: 6px;
 
     background-color : @bg0;
+}
+
+prompt {
+    padding: 6px 3px;
+    text-color: @fg0;
 }
 
 entry {
@@ -135,13 +146,23 @@ scrollbar {
 
 textbox {
     padding : 4px 8px;
+    text-color: @fg0;
 }
 
 configuration {
     show: "drun";
     modi: "combi,drun,run,window,calc,ssh,nerdy,man:rofi-man";
 
-    combi-modi: "drun,run,window,nerdy,man";
+    combi-modi: "drun,run,window,calc,ssh,nerdy,man";
+
+    display-combi:      "Launcher:";
+    display-drun:       "Applications:";
+    display-run:        "Command:";
+    display-window:     "Windows:";
+    display-calc:       "Calculator:";
+    display-ssh:        "SSH:";
+    display-nerdy:      "Glyphs:";
+    display-man:        "Manual:";
 
     terminal: "alacritty";
 

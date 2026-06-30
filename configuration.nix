@@ -249,6 +249,7 @@
 
     gcc
     openssl
+    mesa-demos
 
     qt6Packages.qt6ct
     qt6Packages.qtstyleplugin-kvantum
@@ -263,6 +264,7 @@
     (writeShellScriptBin "rofi-search" (builtins.readFile ./scripts/rofi-search.sh))
     (writeShellScriptBin "rofi-tmux" (builtins.readFile ./scripts/rofi-tmux.sh))
     (writeShellScriptBin "rofi-wallpaper" (builtins.readFile ./scripts/rofi-wallpaper.sh))
+    (writeShellScriptBin "rofi-dictionary" (builtins.readFile ./scripts/rofi-dictionary.sh))
   ];
 
   qt = {

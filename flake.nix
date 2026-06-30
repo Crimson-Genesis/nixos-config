@@ -135,6 +135,7 @@
         libxinerama
         libxcb
         libxscrnsaver
+        xdotool
 
         # Wayland
         wayland
@@ -150,6 +151,7 @@
         gtk4
 
         # Misc
+        webkitgtk_4_1
         glib
         dbus
         libxkbcommon
@@ -170,7 +172,6 @@
         pyright
 
         gcc
-        pkg-config
         openssl
         zlib
       ];

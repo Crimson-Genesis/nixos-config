@@ -378,7 +378,7 @@ cleanup_missing_paths() {
     fi
 
     if ! rofi_confirm \
-        "Remove ${#missing_sessions[@]} missing project(s)?"; then
+        "Remove ${#missing_sessions[@]} missing project(s) ?"; then
         return 0
     fi
 
@@ -1970,7 +1970,7 @@ create_entry_session() {
 
 cmd_session() {
     local selections
-    selections="$(rofi_pro_temp_selector "Tmux Session")"
+    selections="$(rofi_pro_temp_selector "Tmux-Session:")"
     [[ -n "$selections" ]] || return 0
     mapfile -t entries <<<"$selections"
     normalize_entries
@@ -1983,7 +1983,7 @@ cmd_session() {
         return 0
     fi
 
-    rofi_confirm "Create Sessions?" || return 0
+    rofi_confirm "Create Sessions ?" || return 0
 
     local created=0
     local i
@@ -2716,7 +2716,7 @@ cmd_edit() {
 
     selections="$(
         rofi_pro_temp_selector \
-            "Edit Projects/Templates"
+            "Edit-Projects/Templates:"
     )"
 
     [[ -n "$selections" ]] || return 0
@@ -2809,7 +2809,7 @@ cmd_delete() {
 
     selections="$(
         rofi_pro_temp_selector \
-            "Delete Projects/Templates"
+            "Delete-Projects/Templates:"
     )"
 
     [[ -n "$selections" ]] || return 0
@@ -2819,7 +2819,7 @@ cmd_delete() {
     normalize_entries
 
     if ! rofi_confirm \
-        "Delete ${#entry_sessions[@]} selected item(s)?"; then
+        "Delete ${#entry_sessions[@]} selected item(s) ?"; then
         return 0
     fi
 
@@ -2900,7 +2900,7 @@ cmd_kill() {
     local selections
 
     selections="$(
-        rofi_pro_temp_selector "Kill Sessions"
+        rofi_pro_temp_selector "Kill-Sessions:"
     )"
 
     [[ -n "$selections" ]] || return 0
@@ -2909,7 +2909,7 @@ cmd_kill() {
 
     normalize_entries
 
-    if ! rofi_confirm "Kill Selected Sessions?"; then
+    if ! rofi_confirm "Kill Selected Sessions ?"; then
         return 0
     fi
 
@@ -2990,7 +2990,7 @@ cmd_kill_all() {
         return 0
     fi
 
-    if ! rofi_confirm "Kill ALL Sessions?"; then
+    if ! rofi_confirm "Kill ALL Sessions ?"; then
         return 0
     fi
 

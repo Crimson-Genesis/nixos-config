@@ -82,6 +82,10 @@
         vimtex = {
           package = pkgs.vimPlugins.vimtex;
         };
+
+        friendly-snippets = {
+          package = pkgs.vimPlugins.friendly-snippets;
+        };
       };
     };
   };

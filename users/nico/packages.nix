@@ -20,6 +20,7 @@
     pinentry-qt
     doublecmd
     alsa-tools
+    wordnet
     haskellPackages.greenclip
 
     alacritty
@@ -31,6 +32,7 @@
     qalculate-gtk
     thunderbird
     android-studio
+    codex
 
     tmux
 
@@ -64,8 +66,10 @@
 
     # LaTeX editor / LSP
     texlab
+    pstree
     texlivePackages.chktex
     texliveFull
+    zathura
     pandoc
     poppler-utils
     python3Packages.python-pptx

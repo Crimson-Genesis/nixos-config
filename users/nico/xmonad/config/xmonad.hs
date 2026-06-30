@@ -4,6 +4,8 @@ import Data.Char (toUpper)
 import qualified Data.Map as M
 import Data.Maybe (isJust)
 import Graphics.X11.ExtraTypes.XF86
+import System.Directory (createDirectoryIfMissing, getHomeDirectory)
+import System.FilePath ((</>))
 import System.IO (hClose, hPutStr)
 import System.Process (spawnCommand)
 import XMonad
@@ -64,26 +66,6 @@ mySoundPlayer = "ffplay -nodisp -autoexit "
 
 windowCount :: X (Maybe String)
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
-
--- isZen :: X Bool
--- isZen = withWindowSet $ \ws ->
---   case W.peek ws of
---     Nothing -> pure False
---     Just w -> do
---       cls <- runQuery className w
---       pure (cls == "zen")
---
--- nextZenTab :: X ()
--- nextZenTab = do
---   zen <- isZen
---   when zen $
---     spawn "notify-send 'ALT J' && xdotool key Control_L+Tab"
---
--- prevZenTab :: X ()
--- prevZenTab = do
---   zen <- isZen
---   when zen $
---     spawn "notify-send 'ALT K' && xdotool key Control_L+Shift_L+Tab"
 
 myScratchPads :: [NamedScratchpad]
 myScratchPads =
@@ -180,6 +162,7 @@ myFloatRules =
     className =? "htop" --> doRectFloat (W.RationalRect 0.02 0.02 0.96 0.96),
     className =? "nvtop" --> doRectFloat (W.RationalRect 0.10 0.10 0.80 0.80),
     className =? "Gcolor3" --> doCenterFloat,
+    className =? "rofi-dictionary" --> doRectFloat (W.RationalRect 0.1 0.1 0.8 0.8),
     className =? "toipe" --> doCenterFloat,
     className =? "nmtui" --> doCenterFloat,
     className =? "pavucontrol" --> doCenterFloat,
@@ -240,7 +223,7 @@ subtitle' x =
 
 showKeybindings :: [((KeyMask, KeySym), NamedAction)] -> NamedAction
 showKeybindings x = addName "Show Keybindings" $ io $ do
-  h <- spawnPipe $ "yad --text-info --fontname=\"JetBrainsMono Nerd Font Mono 12\" --fore=#46d9ff back=#282c36 --center --geometry=1200x800 --title \"XMonad keybindings\""
+  h <- spawnPipe "yad --text-info --fontname=\"JetBrainsMono Nerd Font Mono 12\" --fore=#46d9ff back=#282c36 --center --geometry=1200x800 --title \"XMonad keybindings\""
   hPutStr h (unlines $ showKmSimple x)
   hClose h
   return ()
@@ -270,6 +253,8 @@ myKeys c =
             ("M1-' w", addName "Launch rofi - window" $ spawn "rofi -show window"),
             ("M1-' e", addName "Launch rofi - emoji" $ spawn "rofimoji -a copy"),
             ("M1-' c", addName "Launch rofi - calc" $ spawn "rofi -show calc"),
+            ("M1-' d", addName "Launch rofi - dictionary" $ spawn "rofi-dictionary"),
+            ("M1-' S-d", addName "Launch rofi - dictionary" $ spawn "rofi-dictionary --clear"),
             ("M1-' s", addName "Launch rofi - search" $ spawn "rofi-search"),
             ("M1-' S-s", addName "Launch rofi - search" $ spawn "rofi-search --clear-history"),
             ("M1-' i", addName "Launch rofi - icons" $ spawn "rofi -show nerdy"),

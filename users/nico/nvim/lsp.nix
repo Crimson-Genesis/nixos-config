@@ -4,14 +4,41 @@
       enable = true;
       sourcePlugins.spell.enable = true;
       setupOpts = {
-        sources.default = [
-          "lsp"
-          "snippets"
-          "path"
-          "buffer"
-          "cmdline"
-          "spell"
-        ];
+        sources = {
+          default = [
+            "lsp"
+            "snippets"
+            "path"
+            "buffer"
+            "cmdline"
+            "spell"
+          ];
+
+          per_filetype = {
+            tex = [
+              "omni"
+              "lsp"
+              "buffer"
+              "path"
+              "spell"
+              "snippets"
+            ];
+            plaintex = [
+              "omni"
+              "lsp"
+              "buffer"
+              "path"
+              "spell"
+              "snippets"
+            ];
+          };
+
+          providers.omni = {
+            name = "Omni";
+            module = "blink.cmp.sources.complete_func";
+            score_offset = 100;
+          };
+        };
         keymap = {
           preset = "default";
 
