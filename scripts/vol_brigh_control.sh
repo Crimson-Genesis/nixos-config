@@ -143,6 +143,80 @@ notify_brightness() {
         "$(printf '%s %3d%%  %s' "$icon" "$percent" "$(bar "$percent")")"
 }
 
+set_bright() {
+    local cur max percent
+
+    max=$(brightnessctl max)
+    cur=$(brightnessctl get)
+    percent=$((cur * 100 / max))
+
+    if [ "$2" = "--rofi" ]; then
+        command -v rofi >/dev/null 2>&1 || {
+            echo "Error" "rofi is not installed"
+            notify-send -a error "Error" "rofi is not installed"
+            exit 1
+        }
+
+        setbright=$(rofi -dmenu -p "󰃠 Brightness [$percent] (0-100):")
+    else
+        setbright="$2"
+    fi
+
+    [ -n "$setbright" ] || {
+        echo "Usage: $(basename "$0") bright <0-100> | bright --rofi"
+        notify-send -a error "Error" "Usage: $(basename "$0") bright <0-100> | bright --rofi"
+        exit 1
+    }
+
+    [[ "$setbright" =~ ^[0-9]+$ ]] || {
+        echo "Brightness must be a number"
+        notify-send -a error "Error" "Brightness must be a number"
+        exit 1
+    }
+
+    ((setbright < 0)) && setbright=0
+    ((setbright > 100)) && setbright=100
+
+    brightnessctl set "${setbright}%" >/dev/null
+    notify_brightness
+}
+
+set_vol() {
+    local vol
+
+    vol=$(pamixer --get-volume)
+    if [ "$2" = "--rofi" ]; then
+        command -v rofi >/dev/null 2>&1 || {
+            echo "Error" "rofi is not installed"
+            notify-send -a error "Error" "rofi is not installed"
+            exit 1
+        }
+
+        setvol=$(rofi -dmenu -p "󰕾 Volume [$vol] (0-100):")
+    else
+        setvol="$2"
+    fi
+
+    [ -n "$setvol" ] || {
+        echo "Usage: $(basename "$0") vol <0-100> | vol --rofi"
+        notify-send -a error "Usage: $(basename "$0") vol <0-100> | vol --rofi"
+        exit 1
+    }
+
+    [[ "$setvol" =~ ^[0-9]+$ ]] || {
+        echo "Volume must be a number"
+        notify-send -a error "Volume must be a number"
+        exit 1
+    }
+
+    ((setvol < 0)) && setvol=0
+    ((setvol > 100)) && setvol=100
+
+    pamixer --set-volume "$setvol"
+    notify_volume
+
+}
+
 check_dependencies
 
 case "$1" in
@@ -182,35 +256,7 @@ mute)
     ;;
 
 vol)
-    if [ "$2" = "--rofi" ]; then
-        command -v rofi >/dev/null 2>&1 || {
-            echo "Error" "rofi is not installed"
-            notify-send -a error "Error" "rofi is not installed"
-            exit 1
-        }
-
-        setvol=$(rofi -dmenu -p "󰕾 Volume (0-100):")
-    else
-        setvol="$2"
-    fi
-
-    [ -n "$setvol" ] || {
-        echo "Usage: $(basename "$0") vol <0-100> | vol --rofi"
-        notify-send -a error "Usage: $(basename "$0") vol <0-100> | vol --rofi"
-        exit 1
-    }
-
-    [[ "$setvol" =~ ^[0-9]+$ ]] || {
-        echo "Volume must be a number"
-        notify-send -a error "Volume must be a number"
-        exit 1
-    }
-
-    ((setvol < 0)) && setvol=0
-    ((setvol > 100)) && setvol=100
-
-    pamixer --set-volume "$setvol"
-    notify_volume
+    set_vol "$@"
     ;;
 
 brightup)
@@ -240,35 +286,7 @@ brightdown)
     ;;
 
 bright)
-    if [ "$2" = "--rofi" ]; then
-        command -v rofi >/dev/null 2>&1 || {
-            echo "Error" "rofi is not installed"
-            notify-send -a error "Error" "rofi is not installed"
-            exit 1
-        }
-
-        setbright=$(rofi -dmenu -p "󰃠 Brightness (0-100):")
-    else
-        setbright="$2"
-    fi
-
-    [ -n "$setbright" ] || {
-        echo "Usage: $(basename "$0") bright <0-100> | bright --rofi"
-        notify-send -a error "Error" "Usage: $(basename "$0") bright <0-100> | bright --rofi"
-        exit 1
-    }
-
-    [[ "$setbright" =~ ^[0-9]+$ ]] || {
-        echo "Brightness must be a number"
-        notify-send -a error "Error" "Brightness must be a number"
-        exit 1
-    }
-
-    ((setbright < 0)) && setbright=0
-    ((setbright > 100)) && setbright=100
-
-    brightnessctl set "${setbright}%" >/dev/null
-    notify_brightness
+    set_bright "$@"
     ;;
 
 *)

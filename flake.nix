@@ -83,6 +83,7 @@
         gnumake
         cmake
         ninja
+        aapt
         pkg-config
         patchelf
 
