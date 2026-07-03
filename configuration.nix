@@ -12,6 +12,9 @@
   ];
 
   boot = {
+    # kernel.sysctl = {
+    #   "vm.nr_hugepages" = 1024;
+    # };
     loader = {
       efi.canTouchEfiVariables = true;
       timeout = 5;
@@ -37,6 +40,23 @@
     fsType = "ext4";
   };
 
+  virtualisation.libvirtd = {
+    enable = true;
+    qemu = {
+      vhostUserPackages = with pkgs; [
+        virtiofsd
+      ];
+
+      package = pkgs.qemu_kvm;
+
+      runAsRoot = false;
+
+      swtpm.enable = true;
+    };
+  };
+
+  virtualisation.spiceUSBRedirection.enable = true;
+
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
 
@@ -57,6 +77,9 @@
   };
 
   programs = {
+    virt-manager = {
+      enable = true;
+    };
     zsh = {
       enable = true;
     };
@@ -158,7 +181,7 @@
     isNormalUser = true;
     description = "nico";
     shell = pkgs.zsh;
-    extraGroups = ["networkmanager" "wheel" "adbusers"];
+    extraGroups = ["networkmanager" "wheel" "adbusers" "libvirtd" "kvm" "input" "video"];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -173,6 +196,34 @@
   };
 
   environment.systemPackages = with pkgs; [
+    virt-viewer
+    spice
+    spice-gtk
+    spice-protocol
+    libguestfs
+    socat
+    virtio-win
+    dmidecode
+    xmlstarlet
+    ethtool
+    tcpdump
+    strace
+    lsof
+    perf
+    bpftrace
+
+    virt-top
+    libosinfo
+    usbutils
+
+    libvirt
+    dnsmasq
+    bridge-utils
+
+    swtpm
+
+    wget
+
     cmatrix
     xwinwrap
     feh
@@ -207,7 +258,6 @@
 
     lua-language-server
     clang-tools
-    rust-analyzer
     pyright
     gopls
     asm-lsp
@@ -216,7 +266,6 @@
     sqlite
     python3
     nodejs
-    rustup
     cargo
     tree
     toipe
