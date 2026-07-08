@@ -35,6 +35,13 @@
     ];
   };
 
+  security.wrappers.ubridge = {
+    source = "${pkgs.ubridge}/bin/ubridge";
+    owner = "root";
+    group = "root";
+    capabilities = "cap_net_admin,cap_net_raw=ep";
+  };
+
   fileSystems."/mnt/data" = {
     device = "/dev/disk/by-uuid/5a1c47d1-6160-4000-ad22-d5418bf7e56a";
     fsType = "ext4";
@@ -95,6 +102,9 @@
   };
 
   services = {
+    tailscale = {
+      enable = true;
+    };
     blueman = {
       enable = true;
     };
@@ -181,7 +191,7 @@
     isNormalUser = true;
     description = "nico";
     shell = pkgs.zsh;
-    extraGroups = ["networkmanager" "wheel" "adbusers" "libvirtd" "kvm" "input" "video"];
+    extraGroups = ["networkmanager" "wheel" "adbusers" "libvirtd" "kvm" "input" "video" "wireshark"];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -211,6 +221,11 @@
     lsof
     perf
     bpftrace
+    inetutils
+
+    ubridge
+    dynamips
+    vpcs
 
     virt-top
     libosinfo
@@ -219,6 +234,7 @@
     libvirt
     dnsmasq
     bridge-utils
+    openvswitch
 
     swtpm
 
@@ -287,7 +303,6 @@
     jq
     playerctl
     ffmpeg
-    tailscale
     screenkey
     pamixer
     libnotify
@@ -295,6 +310,9 @@
     polkit_gnome
     ngrok
     xwininfo
+
+    gns3-gui
+    gns3-server
 
     gcc
     openssl
@@ -314,6 +332,11 @@
     (writeShellScriptBin "rofi-tmux" (builtins.readFile ./scripts/rofi-tmux.sh))
     (writeShellScriptBin "rofi-wallpaper" (builtins.readFile ./scripts/rofi-wallpaper.sh))
     (writeShellScriptBin "rofi-dictionary" (builtins.readFile ./scripts/rofi-dictionary.sh))
+    (writeShellScriptBin "gns3-console" (builtins.readFile ./scripts/gns3-console.sh))
+
+    (runCommand "crimson-deck-server" {} ''
+      install -Dm755 ${./bin/crimson-server-release-latest} $out/bin/crimson-deck-server
+    '')
   ];
 
   qt = {
