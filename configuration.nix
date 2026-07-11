@@ -21,16 +21,14 @@
       systemd-boot = {
         enable = true;
         configurationLimit = 20;
-        editor = false;
+        # editor = false;
+        editor = true;
       };
     };
     consoleLogLevel = 0;
     kernelParams = [
       "quiet"
-      "loglevel=0"
-      "rd.systemd.show_status=false"
-      "systemd.show_status=false"
-      "vt.global_cursor_default=0"
+      "loglevel=3"
       "8250.nr_uarts=0"
     ];
   };
@@ -47,18 +45,28 @@
     fsType = "ext4";
   };
 
-  virtualisation.libvirtd = {
-    enable = true;
-    qemu = {
-      vhostUserPackages = with pkgs; [
-        virtiofsd
-      ];
+  virtualisation = {
+    libvirtd = {
+      enable = true;
+      qemu = {
+        vhostUserPackages = with pkgs; [
+          virtiofsd
+        ];
 
-      package = pkgs.qemu_kvm;
+        package = pkgs.qemu_kvm;
 
-      runAsRoot = false;
-
-      swtpm.enable = true;
+        swtpm.enable = true;
+      };
+    };
+    xen = {
+      enable = true;
+      # boot = {
+      #   builderVerbosity = "info";
+      #   params = [
+      #     "loglvl=all"
+      #     "guest_loglvl=all"
+      #   ];
+      # };
     };
   };
 
@@ -206,10 +214,12 @@
   };
 
   environment.systemPackages = with pkgs; [
+    xinit
+
     virt-viewer
-    spice
-    spice-gtk
-    spice-protocol
+    # spice
+    # spice-gtk
+    # spice-protocol
     libguestfs
     socat
     virtio-win
