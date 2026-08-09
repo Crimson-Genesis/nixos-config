@@ -25,11 +25,11 @@
         editor = true;
       };
     };
-    consoleLogLevel = 0;
+    consoleLogLevel = 6;
     kernelParams = [
-      "quiet"
-      "loglevel=3"
+      "loglevel=6"
       "8250.nr_uarts=0"
+      "intel_iommu=on"
     ];
   };
 
@@ -48,29 +48,47 @@
   virtualisation = {
     libvirtd = {
       enable = true;
+
       qemu = {
+        package = pkgs.qemu_kvm;
+
+        # ovmf = {
+        #   enable = true;
+        #   packages = [pkgs.OVMFFull.fd];
+        # };
+
         vhostUserPackages = with pkgs; [
           virtiofsd
         ];
 
-        package = pkgs.qemu_kvm;
-
         swtpm.enable = true;
       };
     };
-    xen = {
-      enable = true;
-      # boot = {
-      #   builderVerbosity = "info";
-      #   params = [
-      #     "loglvl=all"
-      #     "guest_loglvl=all"
-      #   ];
-      # };
-    };
+
+    spiceUSBRedirection.enable = true;
   };
 
-  virtualisation.spiceUSBRedirection.enable = true;
+  # virtualisation.xen = {
+  #   enable = true;
+  #
+  #   qemu.package = pkgs.qemu_xen;
+  #
+  #   boot = {
+  #     builderVerbosity = "info";
+  #
+  #     params = [
+  #       "dom0=pvh"
+  #       "iommu=1"
+  #       # "loglvl=all"
+  #       # "guest_loglvl=all"
+  #     ];
+  #   };
+  #
+  #   dom0Resources = {
+  #     memory = 12288;
+  #     maxVCPUs = 4;
+  #   };
+  # };
 
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
@@ -107,6 +125,9 @@
     xfconf = {
       enable = true;
     };
+    dwl = {
+      enable = true;
+    };
   };
 
   services = {
@@ -134,11 +155,6 @@
     };
 
     displayManager = {
-      # sddm = {
-      #   enable = true;
-      #   package = pkgs.kdePackages.sddm;
-      #   theme = "sddm-astronaut-theme";
-      # };
       ly = {
         enable = true;
         settings = {
@@ -199,7 +215,7 @@
     isNormalUser = true;
     description = "nico";
     shell = pkgs.zsh;
-    extraGroups = ["networkmanager" "wheel" "adbusers" "libvirtd" "kvm" "input" "video" "wireshark"];
+    extraGroups = ["networkmanager" "wheel" "libvirtd" "kvm" "adbusers" "input" "video" "wireshark"];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -214,15 +230,15 @@
   };
 
   environment.systemPackages = with pkgs; [
+    # xen
     xinit
 
     virt-viewer
-    # spice
-    # spice-gtk
-    # spice-protocol
+    virt-top
     libguestfs
-    socat
     virtio-win
+
+    socat
     dmidecode
     xmlstarlet
     ethtool
@@ -237,17 +253,9 @@
     dynamips
     vpcs
 
-    virt-top
-    libosinfo
     usbutils
 
-    libvirt
-    dnsmasq
     bridge-utils
-    openvswitch
-
-    swtpm
-
     wget
 
     cmatrix
@@ -299,6 +307,7 @@
 
     android-tools
     jdk21
+    python313Packages.argostranslate
 
     adwaita-icon-theme
     gnome-themes-extra
@@ -320,6 +329,10 @@
     polkit_gnome
     ngrok
     xwininfo
+    qdirstat
+    nix-tree
+
+    zip
 
     gns3-gui
     gns3-server
@@ -343,6 +356,7 @@
     (writeShellScriptBin "rofi-wallpaper" (builtins.readFile ./scripts/rofi-wallpaper.sh))
     (writeShellScriptBin "rofi-dictionary" (builtins.readFile ./scripts/rofi-dictionary.sh))
     (writeShellScriptBin "gns3-console" (builtins.readFile ./scripts/gns3-console.sh))
+    (writeShellScriptBin "yt-dlq" (builtins.readFile ./scripts/yt_dlq.sh))
 
     (runCommand "crimson-deck-server" {} ''
       install -Dm755 ${./bin/crimson-server-release-latest} $out/bin/crimson-deck-server
@@ -365,10 +379,21 @@
     noto-fonts-color-emoji
   ];
 
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
+  nix = {
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      auto-optimise-store = true;
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 7d";
+    };
+  };
+
   hardware = {
     bluetooth.enable = true;
     opentabletdriver.enable = true;

@@ -1,5 +1,12 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
+    mitmproxy
+    ngrep
+    podman
+    podman-tui
+
+    yt-dlp
+
     satty
     kitty
     localsend
@@ -25,6 +32,7 @@
     alsa-tools
     wordnet
     haskellPackages.greenclip
+    fontforge-gtk
 
     alacritty
     mpv

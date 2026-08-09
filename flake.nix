@@ -371,6 +371,94 @@
         pythonMlPackages
         ++ pythonDevPackages;
 
+      osDevPackages = with pkgs;
+        [
+          # Debian bootstrap
+          debootstrap
+
+          # Debian packaging
+          dpkg
+          fakeroot
+          reprepro
+          equivs
+          quilt
+
+          # ISO / bootloader
+          grub2
+          xorriso
+          syslinux
+          libisoburn
+          cdrkit
+
+          # Filesystem tools
+          squashfsTools
+          e2fsprogs
+          dosfstools
+          mtools
+          parted
+          gptfdisk
+          cpio
+
+          # Compression
+          gzip
+          xz
+          zstd
+          lz4
+
+          # Base utilities
+          bash
+          coreutils
+          findutils
+          gnugrep
+          gnused
+          util-linux
+          gawk
+          perl
+          rsync
+          curl
+          wget
+          jq
+          yq
+
+          # Build tools
+          gcc
+          binutils
+          gnumake
+          cmake
+          ninja
+          pkg-config
+          bc
+          kmod
+
+          # Version control
+          git
+          git-lfs
+
+          # Debugging
+          gdb
+          strace
+          diffoscope
+          file
+          tree
+          xxd
+
+          # Libraries
+          openssl
+          libarchive
+
+          # Xen / libvirt utilities
+          libvirt
+          libguestfs
+          virt-viewer
+          virt-top
+          swtpm
+          xmlstarlet
+          dmidecode
+        ]
+        ++ lib.optionals (pkgs ? mmdebstrap) [
+          mmdebstrap
+        ];
+
       mkNativePackages = rust: go:
         rust
         ++ go
@@ -481,6 +569,15 @@
         fi
       '';
 
+      osDevHook = ''
+        export LANG=C.UTF-8
+
+        echo "=============================="
+        echo "Entropy OS Development Shell"
+        echo "=============================="
+        echo
+      '';
+
       mkShell = packages: hook:
         pkgs.mkShellNoCC {
           inherit packages;
@@ -558,7 +655,11 @@
           (commonPythonHook + rustGoHook rustLinuxHook goLinuxHook);
       };
 
-      shells = mainShells // linuxPythonShells;
+      shells =
+        (mainShells // linuxPythonShells)
+        // {
+          os-dev = mkShell osDevPackages osDevHook;
+        };
     in
       shells
       // {
