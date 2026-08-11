@@ -5,6 +5,7 @@
     podman
     podman-tui
 
+    ani-cli
     yt-dlp
 
     satty
