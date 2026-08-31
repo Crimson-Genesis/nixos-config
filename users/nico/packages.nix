@@ -1,9 +1,12 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
+    dbeaver-bin
+
     mitmproxy
     ngrep
     podman
     podman-tui
+    podman-compose
 
     ani-cli
     yt-dlp

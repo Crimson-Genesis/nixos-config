@@ -178,7 +178,7 @@ myWorkspaceRules =
     className =? "doublecmd" --> doShiftAndView " sys ",
     className =? "Thunar" --> doShiftAndView " sys ",
     (className =? "mpv" <&&> (not <$> (resource =? "wallpaper"))) --> doShiftAndView " vid ",
-    className =? "rnote" --> doShiftAndView " pen ",
+    className =? "Excalidraw-rs" --> doShiftAndView " pen ",
     className =? "Inkscape" --> doShiftAndView " pen ",
     className =? "qBittorrent" --> doShiftAndView " qbit ",
     className =? "VirtualBox Manager" --> doShiftAndView " vm ",

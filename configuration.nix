@@ -337,6 +337,10 @@
     gns3-gui
     gns3-server
 
+    exfatprogs
+    parted
+    aria2
+
     gcc
     openssl
     mesa-demos

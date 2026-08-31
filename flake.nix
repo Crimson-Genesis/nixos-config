@@ -2,6 +2,8 @@
   description = "NixOS configuration and multi-target development shells";
 
   inputs = {
+    polymc.url = "github:PolyMC/PolyMC";
+
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     home-manager = {
@@ -686,7 +688,13 @@
           }
 
           ({pkgs, ...}: {
+            nixpkgs.overlays = [
+              inputs.polymc.overlay
+            ];
+
             environment.systemPackages = [
+              pkgs.polymc
+
               antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.default
               antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.google-antigravity-ide
               antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.google-antigravity-cli
