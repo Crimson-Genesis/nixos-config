@@ -176,17 +176,7 @@
         lsp.enable = true;
       };
 
-      typescript = {
-        enable = true;
-        lsp.enable = true;
-        format.enable = true;
-      };
 
-      tsx = {
-        enable = true;
-        lsp.enable = true;
-        format.enable = true;
-      };
       haskell = {
         enable = true;
         lsp.enable = true;

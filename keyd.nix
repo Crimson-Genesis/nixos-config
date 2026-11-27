@@ -54,9 +54,9 @@
           #
           # Editing
           #
-          i = "backspace";
-          o = "delete";
-          p = "enter";
+          o = "backspace";
+          p = "delete";
+          i = "enter";
           t = "tab";
           q = "esc";
           f = "insert";

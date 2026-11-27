@@ -1,5 +1,8 @@
 {pkgs, ...}: {
   home.packages = with pkgs; [
+    kdePackages.kdenlive
+    telegram-desktop
+
     dbeaver-bin
 
     mitmproxy

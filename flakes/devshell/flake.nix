@@ -38,8 +38,8 @@
 
     mkDevShells = system: let
       pkgs = mkPkgs system;
-      isLinux = pkgs.stdenv.isLinux;
-      isDarwin = pkgs.stdenv.isDarwin;
+      isLinux = pkgs.stdenv.hostPlatform.isLinux;
+      isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
       hostGoArch =
         if pkgs.stdenv.hostPlatform.isAarch64
         then "arm64"

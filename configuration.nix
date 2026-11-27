@@ -202,13 +202,15 @@
     };
   };
 
-  xdg.portal = {
-    enable = true;
+  xdg = {
+    portal = {
+      enable = true;
 
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-gtk
-    ];
-    config.common.default = "*";
+      extraPortals = with pkgs; [
+        xdg-desktop-portal-gtk
+      ];
+      config.common.default = "*";
+    };
   };
 
   users.users."nico" = {
@@ -232,6 +234,7 @@
   environment.systemPackages = with pkgs; [
     # xen
     xinit
+    qview
 
     virt-viewer
     virt-top
@@ -261,6 +264,7 @@
     cmatrix
     xwinwrap
     feh
+    imv
     file
     binutils
     hsetroot
@@ -361,10 +365,29 @@
     (writeShellScriptBin "rofi-dictionary" (builtins.readFile ./scripts/rofi-dictionary.sh))
     (writeShellScriptBin "gns3-console" (builtins.readFile ./scripts/gns3-console.sh))
     (writeShellScriptBin "yt-dlq" (builtins.readFile ./scripts/yt_dlq.sh))
+    (writeShellScriptBin "replace" (builtins.readFile ./scripts/replace.sh))
 
-    (runCommand "crimson-deck-server" {} ''
-      install -Dm755 ${./bin/crimson-server-release-latest} $out/bin/crimson-deck-server
-    '')
+    (pkgs.stdenv.mkDerivation {
+      pname = "crimson-deck-server";
+      version = "latest";
+
+      src = ./bin/crimson-server-release-latest;
+
+      dontUnpack = true;
+
+      nativeBuildInputs = [
+        pkgs.autoPatchelfHook
+      ];
+
+      buildInputs = [
+        pkgs.stdenv.cc.cc.lib
+        pkgs.libxcb
+      ];
+
+      installPhase = ''
+        install -Dm755 $src $out/bin/crimson-deck-server
+      '';
+    })
   ];
 
   qt = {

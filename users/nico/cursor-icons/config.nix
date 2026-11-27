@@ -1,5 +1,6 @@
 {pkgs, ...}: {
   home.pointerCursor = {
+    enable = true;
     name = "Acheron";
     size = 24;
 
